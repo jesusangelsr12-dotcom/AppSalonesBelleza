@@ -816,3 +816,52 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 .btn-logout:active {
   background: var(--color-gray-100);
 }
+
+/* ============================================
+   Inner Screen Layout (Cita, Gasto, Registros, Config)
+   ============================================ */
+
+.screen-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.screen-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-brown);
+}
+
+.header-back {
+  background: none;
+  border: none;
+  color: var(--color-gold);
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.input-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.step-content {
+  padding: 8px 0;
+}
+
+/* --- Confirm button in keypad --- */
+.keypad-key--confirm {
+  background: var(--color-gold);
+  color: var(--color-brown);
+  font-weight: 700;
+}
