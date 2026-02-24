@@ -66,6 +66,14 @@ export function createCita(sheetId, cita) {
   });
 }
 
+/** Eliminar una cita */
+export function deleteCita(sheetId, fecha, timestamp, clienta) {
+  return fetchAPI('citas', {
+    method: 'DELETE',
+    body: { sheet_id: sheetId, fecha, timestamp, clienta },
+  });
+}
+
 /** Obtener gastos de hoy */
 export function getGastos(sheetId, fecha) {
   return fetchAPI(`gastos?sheet_id=${encodeURIComponent(sheetId)}&fecha=${fecha}`);
@@ -76,5 +84,13 @@ export function createGasto(sheetId, gasto) {
   return fetchAPI('gastos', {
     method: 'POST',
     body: { sheet_id: sheetId, ...gasto },
+  });
+}
+
+/** Eliminar un gasto */
+export function deleteGasto(sheetId, fecha, timestamp, descripcion) {
+  return fetchAPI('gastos', {
+    method: 'DELETE',
+    body: { sheet_id: sheetId, fecha, timestamp, descripcion },
   });
 }

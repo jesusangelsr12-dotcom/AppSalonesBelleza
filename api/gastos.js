@@ -5,7 +5,7 @@
  * POST { sheet_id, fecha, timestamp, descripcion, monto, metodo_pago } → { success }
  */
 
-const { readSheet, appendSheet } = require('../lib/sheets');
+const { readSheet, appendSheet, deleteRow } = require('../lib/sheets');
 
 module.exports = async function handler(req, res) {
   try {
@@ -42,6 +42,26 @@ module.exports = async function handler(req, res) {
       ]);
 
       return res.status(201).json({ success: true });
+    }
+
+    if (req.method === 'DELETE') {
+      const { sheet_id, fecha, timestamp, descripcion } = req.body;
+
+      if (!sheet_id || !fecha || !timestamp || !descripcion) {
+        return res.status(400).json({ error: 'Faltan datos para identificar el gasto' });
+      }
+
+      const rows = await readSheet(sheet_id, 'Gastos!A:E');
+      const rowIndex = rows.findIndex(
+        (row, i) => i > 0 && row[0] === fecha && row[1] === timestamp && row[2] === descripcion
+      );
+
+      if (rowIndex === -1) {
+        return res.status(404).json({ error: 'Gasto no encontrado' });
+      }
+
+      await deleteRow(sheet_id, 'Gastos', rowIndex);
+      return res.status(200).json({ success: true });
     }
 
     res.status(405).json({ error: 'Método no permitido' });
