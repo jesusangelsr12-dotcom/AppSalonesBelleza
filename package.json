@@ -1,0 +1,16 @@
+{
+  "name": "app-salones-belleza",
+  "version": "1.0.0",
+  "description": "PWA para administración de salones de belleza — JR Consulting",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step needed'"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
