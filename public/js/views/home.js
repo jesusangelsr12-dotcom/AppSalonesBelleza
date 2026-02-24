@@ -38,7 +38,7 @@ export function render(session) {
       <div class="home-footer">
         <button class="home-action-card home-action-card--sm" id="btn-config">
           <span class="home-action-emoji">⚙️</span>
-          <span class="home-action-label">Configuración</span>
+          <span class="home-action-label">Agregar Servicios</span>
         </button>
 
         <button class="btn-logout" id="btn-logout">

@@ -17,7 +17,7 @@ export function render(s) {
     <div class="screen" id="config-screen">
       <header class="screen-header">
         <button class="header-back" id="config-back">← Atrás</button>
-        <h2 class="screen-title">Configuración</h2>
+        <h2 class="screen-title">Agregar Servicios</h2>
       </header>
 
       <div id="config-content">

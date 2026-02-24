@@ -287,14 +287,15 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  max-width: 300px;
+  max-width: 340px;
+  width: 100%;
   margin: 0 auto;
 }
 
 .keypad-key {
-  min-height: 56px;
+  min-height: 64px;
   font-family: var(--font-family);
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 600;
   color: var(--color-brown);
   background: var(--color-white);
@@ -906,6 +907,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 .config-add-row {
   display: flex;
   gap: 10px;
+  align-items: stretch;
 }
 
 .config-add-input {
@@ -915,6 +917,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 
 .config-add-btn {
   flex-shrink: 0;
+  width: auto;
   min-height: auto;
   padding: 12px 20px;
 }
