@@ -17,8 +17,7 @@ export function render() {
       <div class="login-container">
         <div class="text-center mb-24">
           <div class="login-logo">JR</div>
-          <h1 class="mt-16">JR Consulting</h1>
-          <p class="mt-8" style="color: var(--color-gray-500)">Administración de Salones</p>
+          <h1 class="mt-16">Iniciar sesión a mi Salón</h1>
         </div>
 
         <p class="text-center mb-16" style="color: var(--color-gray-500); font-size: 0.9rem">
