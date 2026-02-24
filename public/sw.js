@@ -46,13 +46,29 @@ self.addEventListener('fetch', (event) => {
 
   // Las llamadas a /api/ siempre van a la red
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(fetch(request));
+    event.respondWith(
+      fetch(request).catch(() =>
+        new Response(
+          JSON.stringify({ error: 'Sin conexión a internet' }),
+          { status: 503, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+    );
     return;
   }
 
-  // Assets estáticos: cache-first
+  // Assets estáticos: cache-first, fallback a red
   event.respondWith(
-    caches.match(request)
-      .then((cached) => cached || fetch(request))
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((response) => {
+        // Cachear recursos nuevos (fonts, etc.)
+        if (response.ok && url.origin === self.location.origin) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        }
+        return response;
+      });
+    })
   );
 });
