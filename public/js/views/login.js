@@ -16,7 +16,7 @@ export function render() {
     <div class="screen screen-centered" id="login-screen">
       <div class="login-container">
         <div class="text-center mb-24">
-          <div class="login-logo">JR</div>
+          <div class="login-logo">✂️</div>
           <h1 class="mt-16">Iniciar sesión a mi Salón</h1>
         </div>
 
