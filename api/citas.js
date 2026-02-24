@@ -1,8 +1,11 @@
 /**
- * GET/POST /api/citas
- * Lee citas de un día o registra una nueva cita.
+ * GET/POST/DELETE /api/citas
+ * Lee citas de un día, registra o elimina una cita.
  * GET  ?sheet_id=xxx&fecha=2026-02-24 → { citas: [...] }
- * POST { sheet_id, fecha, timestamp, clienta, servicio, costo, metodo_pago } → { success }
+ * POST { sheet_id, fecha, timestamp, clienta, items, total, metodo_pago } → { success }
+ * DELETE { sheet_id, fecha, timestamp, clienta } → { success }
+ *
+ * items es un JSON array: [{"tipo":"servicio","nombre":"Corte","costo":200}, ...]
  */
 
 const { readSheet, appendSheet, deleteRow } = require('../lib/sheets');
@@ -16,30 +19,44 @@ module.exports = async function handler(req, res) {
       }
 
       const rows = await readSheet(sheet_id, 'Citas!A:F');
-      // Row 0 = headers: fecha, timestamp, clienta, servicio, costo, metodo_pago
+      // Row 0 = headers: fecha, timestamp, clienta, items/servicio, total/costo, metodo_pago
       const citas = rows.slice(1)
         .filter((row) => row[0] === fecha)
-        .map((row) => ({
-          fecha: row[0],
-          timestamp: row[1],
-          clienta: row[2],
-          servicio: row[3],
-          costo: parseFloat(row[4]) || 0,
-          metodo_pago: row[5],
-        }));
+        .map((row) => {
+          // Soportar formato nuevo (items JSON) y viejo (servicio string)
+          let items = [];
+          let total = 0;
+          try {
+            items = JSON.parse(row[3]);
+            total = parseFloat(row[4]) || 0;
+          } catch {
+            // Formato viejo: servicio es string, costo es número
+            items = [{ tipo: 'servicio', nombre: row[3], costo: parseFloat(row[4]) || 0 }];
+            total = parseFloat(row[4]) || 0;
+          }
+
+          return {
+            fecha: row[0],
+            timestamp: row[1],
+            clienta: row[2],
+            items,
+            total,
+            metodo_pago: row[5],
+          };
+        });
 
       return res.status(200).json({ citas });
     }
 
     if (req.method === 'POST') {
-      const { sheet_id, fecha, timestamp, clienta, servicio, costo, metodo_pago } = req.body;
+      const { sheet_id, fecha, timestamp, clienta, items, total, metodo_pago } = req.body;
 
-      if (!sheet_id || !fecha || !clienta || !servicio || costo === undefined || !metodo_pago) {
+      if (!sheet_id || !fecha || !clienta || !items || total === undefined || !metodo_pago) {
         return res.status(400).json({ error: 'Faltan datos requeridos' });
       }
 
       await appendSheet(sheet_id, 'Citas!A:F', [
-        [fecha, timestamp, clienta, servicio, String(costo), metodo_pago],
+        [fecha, timestamp, clienta, JSON.stringify(items), String(total), metodo_pago],
       ]);
 
       return res.status(201).json({ success: true });
@@ -53,7 +70,6 @@ module.exports = async function handler(req, res) {
       }
 
       const rows = await readSheet(sheet_id, 'Citas!A:F');
-      // Buscar la fila que coincida (desde index 1 para saltar headers)
       const rowIndex = rows.findIndex(
         (row, i) => i > 0 && row[0] === fecha && row[1] === timestamp && row[2] === clienta
       );

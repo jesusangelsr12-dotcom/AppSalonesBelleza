@@ -1026,3 +1026,146 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 .delete-modal-btn--confirm:active {
   background: #c0392b;
 }
+
+/* ============================================
+   Multi-Select & Pricing (Cita Flow)
+   ============================================ */
+
+.multi-select-hint {
+  font-size: 0.82rem;
+  color: var(--color-gray-400);
+  margin-bottom: 16px;
+}
+
+.service-card {
+  position: relative;
+}
+
+.service-card-check {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-gold);
+}
+
+.step-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.step-actions .btn {
+  flex: 1;
+}
+
+/* --- Pricing Item Name & Badge --- */
+.pricing-item-name {
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-brown);
+  margin-bottom: 4px;
+}
+
+.pricing-item-badge {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.pricing-item-badge--servicio {
+  color: var(--color-purple);
+}
+
+.pricing-item-badge--producto {
+  color: var(--color-gold);
+}
+
+/* --- Summary Section Title --- */
+.summary-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 20px 4px;
+  background: var(--color-gray-100);
+}
+
+.summary-row--item .summary-label {
+  padding-left: 8px;
+}
+
+.summary-row--total {
+  background: var(--color-gray-100);
+  border-top: 2px solid var(--color-gray-200);
+}
+
+.summary-value--total {
+  font-size: 1.1rem;
+  color: var(--color-green);
+}
+
+/* ============================================
+   Records Items Breakdown
+   ============================================ */
+
+.record-item--expandable {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.record-main-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.record-items-breakdown {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-gray-200);
+}
+
+.record-items-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 0.8rem;
+}
+
+.record-items-badge {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--color-white);
+  flex-shrink: 0;
+}
+
+.record-items-badge--servicio {
+  background: var(--color-purple);
+}
+
+.record-items-badge--producto {
+  background: var(--color-gold);
+}
+
+.record-items-name {
+  flex: 1;
+  color: var(--color-gray-500);
+}
+
+.record-items-cost {
+  font-weight: 600;
+  color: var(--color-brown);
+}

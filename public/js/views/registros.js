@@ -41,7 +41,7 @@ export function render(s) {
       </div>
     </div>
 
-    <!-- Modal de confirmación para eliminar -->
+    <!-- Modal de confirmaci\u00f3n para eliminar -->
     <div class="delete-modal hidden" id="delete-modal">
       <div class="delete-modal-backdrop" id="delete-modal-backdrop"></div>
       <div class="delete-modal-content">
@@ -61,7 +61,7 @@ export function init(s) {
   session = s;
   document.getElementById('registros-back').addEventListener('click', () => navigateTo('home'));
 
-  // Cerrar modal con backdrop o botón cancelar
+  // Cerrar modal con backdrop o bot\u00f3n cancelar
   document.getElementById('delete-modal-backdrop').addEventListener('click', closeDeleteModal);
   document.getElementById('delete-modal-cancel').addEventListener('click', closeDeleteModal);
 
@@ -77,7 +77,6 @@ function openDeleteModal(type, data, displayName) {
     `\u00bfEliminar ${type === 'cita' ? 'la cita de' : 'el gasto'} "${displayName}"?`;
   document.getElementById('delete-modal').classList.remove('hidden');
 
-  // Asignar handler al botón confirmar
   const confirmBtn = document.getElementById('delete-modal-confirm');
   confirmBtn.onclick = handleConfirmDelete;
 }
@@ -122,8 +121,8 @@ async function loadRegistros() {
     const citas = citasRes.citas || [];
     const gastos = gastosRes.gastos || [];
 
-    // Calcular totales
-    const totalIngresos = citas.reduce((sum, c) => sum + c.costo, 0);
+    // Calcular totales (ahora cada cita tiene .total en vez de .costo)
+    const totalIngresos = citas.reduce((sum, c) => sum + c.total, 0);
     const totalGastos = gastos.reduce((sum, g) => sum + g.monto, 0);
 
     document.getElementById('total-ingresos').textContent = formatMXN(totalIngresos);
@@ -144,6 +143,34 @@ async function loadRegistros() {
   }
 }
 
+/** Genera el subtítulo de una cita con desglose de items */
+function buildCitaSubtitle(c) {
+  const items = c.items || [];
+  if (items.length === 0) return `${c.metodo_pago} \u00b7 ${c.timestamp}`;
+
+  const names = items.map((it) => it.nombre);
+  return `${names.join(', ')} \u00b7 ${c.metodo_pago} \u00b7 ${c.timestamp}`;
+}
+
+/** Genera el desglose de items como HTML */
+function buildItemsBreakdown(items) {
+  if (!items || items.length <= 1) return '';
+
+  return `
+    <div class="record-items-breakdown">
+      ${items.map((it) => `
+        <div class="record-items-row">
+          <span class="record-items-badge record-items-badge--${it.tipo}">
+            ${it.tipo === 'servicio' ? 'S' : 'P'}
+          </span>
+          <span class="record-items-name">${it.nombre}</span>
+          <span class="record-items-cost">${formatMXN(it.costo)}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 function renderRegistros(citas, gastos) {
   const content = document.getElementById('registros-content');
 
@@ -159,38 +186,43 @@ function renderRegistros(citas, gastos) {
 
   let html = '';
 
-  // Sección Citas
+  // Secci\u00f3n Citas
   if (citas.length > 0) {
     html += `
       <div class="records-section">
         <div class="records-section-title">Citas (${citas.length})</div>
         ${citas.map((c, i) => `
-          <div class="record-item">
-            <div class="record-info">
-              <div class="record-title">${c.clienta}</div>
-              <div class="record-subtitle">${c.servicio} \u00b7 ${c.metodo_pago} \u00b7 ${c.timestamp}</div>
+          <div class="record-item record-item--expandable">
+            <div class="record-main-row">
+              <div class="record-info">
+                <div class="record-title">${c.clienta}</div>
+                <div class="record-subtitle">${buildCitaSubtitle(c)}</div>
+              </div>
+              <div class="record-amount record-amount--income">${formatMXN(c.total)}</div>
+              <button class="record-delete-btn" data-type="cita" data-index="${i}" title="Eliminar">\u00d7</button>
             </div>
-            <div class="record-amount record-amount--income">${formatMXN(c.costo)}</div>
-            <button class="record-delete-btn" data-type="cita" data-index="${i}" title="Eliminar">\u00d7</button>
+            ${buildItemsBreakdown(c.items)}
           </div>
         `).join('')}
       </div>
     `;
   }
 
-  // Sección Gastos
+  // Secci\u00f3n Gastos
   if (gastos.length > 0) {
     html += `
       <div class="records-section">
         <div class="records-section-title">Gastos (${gastos.length})</div>
         ${gastos.map((g, i) => `
           <div class="record-item">
-            <div class="record-info">
-              <div class="record-title">${g.descripcion}</div>
-              <div class="record-subtitle">${g.metodo_pago} \u00b7 ${g.timestamp}</div>
+            <div class="record-main-row">
+              <div class="record-info">
+                <div class="record-title">${g.descripcion}</div>
+                <div class="record-subtitle">${g.metodo_pago} \u00b7 ${g.timestamp}</div>
+              </div>
+              <div class="record-amount record-amount--expense">-${formatMXN(g.monto)}</div>
+              <button class="record-delete-btn" data-type="gasto" data-index="${i}" title="Eliminar">\u00d7</button>
             </div>
-            <div class="record-amount record-amount--expense">-${formatMXN(g.monto)}</div>
-            <button class="record-delete-btn" data-type="gasto" data-index="${i}" title="Eliminar">\u00d7</button>
           </div>
         `).join('')}
       </div>
@@ -201,7 +233,7 @@ function renderRegistros(citas, gastos) {
 
   // Agregar event listeners a botones de eliminar
   content.querySelectorAll('.record-delete-btn').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       const type = btn.dataset.type;
       const index = parseInt(btn.dataset.index, 10);
 

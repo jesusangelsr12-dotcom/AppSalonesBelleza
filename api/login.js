@@ -2,7 +2,7 @@
  * POST /api/login
  * Valida un PIN de 6 dígitos buscando en todos los salones registrados.
  * Body: { pin_hash }
- * Respuesta: { success, salon_id, salon_nombre, sheet_id, logo_url, servicios }
+ * Respuesta: { success, salon_id, salon_nombre, sheet_id, logo_url, servicios, productos }
  */
 
 const { readSheet } = require('../lib/sheets');
@@ -34,8 +34,8 @@ module.exports = async function handler(req, res) {
 
       try {
         // Leer Config del Sheet del salón
-        // Columnas: salon_nombre, logo_url, pin_hash, servicios
-        const configRows = await readSheet(sheetId, 'Config!A:D');
+        // Columnas: salon_nombre, logo_url, pin_hash, servicios, productos
+        const configRows = await readSheet(sheetId, 'Config!A:E');
         const configData = configRows[1]; // Row 0 = headers, Row 1 = data
 
         if (!configData) continue;
@@ -51,6 +51,13 @@ module.exports = async function handler(req, res) {
             servicios = [];
           }
 
+          let productos = [];
+          try {
+            productos = JSON.parse(configData[4] || '[]');
+          } catch {
+            productos = [];
+          }
+
           return res.status(200).json({
             success: true,
             salon_id: salonId,
@@ -58,6 +65,7 @@ module.exports = async function handler(req, res) {
             sheet_id: sheetId,
             logo_url: configData[1] || '',
             servicios,
+            productos,
           });
         }
       } catch {
