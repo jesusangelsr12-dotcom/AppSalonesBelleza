@@ -32,16 +32,11 @@ async function fetchAPI(endpoint, options = {}) {
   return data;
 }
 
-/** Obtener lista de salones desde la hoja maestra */
-export function getSalones() {
-  return fetchAPI('salones');
-}
-
-/** Validar PIN de un salón */
-export function login(salonId, pinHash) {
+/** Validar PIN de 6 dígitos (busca automáticamente el salón) */
+export function login(pinHash) {
   return fetchAPI('login', {
     method: 'POST',
-    body: { salon_id: salonId, pin_hash: pinHash },
+    body: { pin_hash: pinHash },
   });
 }
 
