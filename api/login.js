@@ -34,8 +34,8 @@ module.exports = async function handler(req, res) {
 
       try {
         // Leer Config del Sheet del salón
-        // Columnas: salon_nombre, logo_url, pin_hash, servicios, productos
-        const configRows = await readSheet(sheetId, 'Config!A:E');
+        // Columnas: salon_nombre, logo_url, pin_hash, servicios, productos, trabajadoras
+        const configRows = await readSheet(sheetId, 'Config!A:F');
         const configData = configRows[1]; // Row 0 = headers, Row 1 = data
 
         if (!configData) continue;
@@ -44,19 +44,9 @@ module.exports = async function handler(req, res) {
 
         if (pin_hash === storedHash) {
           // PIN encontrado — login exitoso
-          let servicios = [];
-          try {
-            servicios = JSON.parse(configData[3] || '[]');
-          } catch {
-            servicios = [];
-          }
-
-          let productos = [];
-          try {
-            productos = JSON.parse(configData[4] || '[]');
-          } catch {
-            productos = [];
-          }
+          const safeJSON = (str) => {
+            try { return JSON.parse(str || '[]'); } catch { return []; }
+          };
 
           return res.status(200).json({
             success: true,
@@ -64,8 +54,9 @@ module.exports = async function handler(req, res) {
             salon_nombre: configData[0] || salonNombre,
             sheet_id: sheetId,
             logo_url: configData[1] || '',
-            servicios,
-            productos,
+            servicios: safeJSON(configData[3]),
+            productos: safeJSON(configData[4]),
+            trabajadoras: safeJSON(configData[5]),
           });
         }
       } catch {

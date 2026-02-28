@@ -5,17 +5,19 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
 ## Funcionalidades
 
 - **Autenticación por PIN** — Cada salón tiene su propio PIN de 6 dígitos con sesión de 8 horas
-- **Registrar Citas** — Flujo de 6 pasos:
+- **Registrar Citas** — Flujo de hasta 7 pasos:
   1. Nombre de la clienta
   2. Selección múltiple de servicios
   3. Selección múltiple de productos (opcional)
   4. Precio individual por cada servicio/producto
-  5. Método de pago (Efectivo, Tarjeta, Transferencia)
-  6. Confirmación con desglose y total automático
+  5. Asignar comisiones a trabajadoras (opcional, se salta si no hay trabajadoras configuradas)
+  6. Método de pago (Efectivo, Tarjeta, Transferencia)
+  7. Confirmación con desglose, comisiones y total automático
+- **Comisiones** — Porcentajes predefinidos por trabajadora (diferenciado entre servicios y productos). Se registran en hoja separada "Comisiones" para fácil reporteo
 - **Registrar Gastos** — Registro de gastos operativos del salón
 - **Ver Registros del Día** — Resumen de ingresos vs gastos con desglose detallado
 - **Eliminar Registros** — Eliminar citas o gastos con confirmación
-- **Configuración** — Administrar catálogo de servicios y productos
+- **Configuración** — Administrar catálogo de servicios, productos y trabajadoras con porcentajes de comisión
 - **PWA** — Instalable en celular, funciona offline para assets estáticos
 
 ## Tech Stack
@@ -83,6 +85,14 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
 | C | pin_hash |
 | D | servicios (JSON array) |
 | E | productos (JSON array) |
+| F | trabajadoras (JSON array) |
+
+**Formato de trabajadoras:**
+```json
+[
+  {"nombre": "Ana", "pct_servicio": 10, "pct_producto": 5}
+]
+```
 
 ### Hoja "Citas" (por salón)
 | Columna | Campo |
@@ -101,6 +111,19 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
   {"tipo": "producto", "nombre": "Shampoo", "costo": 150}
 ]
 ```
+
+### Hoja "Comisiones" (por salón)
+| Columna | Campo |
+|---------|-------|
+| A | fecha |
+| B | timestamp |
+| C | clienta |
+| D | trabajadora |
+| E | item |
+| F | tipo |
+| G | costo |
+| H | pct |
+| I | comision |
 
 ### Hoja "Gastos" (por salón)
 | Columna | Campo |

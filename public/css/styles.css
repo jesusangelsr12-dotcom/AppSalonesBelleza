@@ -1169,3 +1169,176 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   font-weight: 600;
   color: var(--color-brown);
 }
+
+.record-items-worker {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--color-purple);
+  background: var(--color-purple-light);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* ============================================
+   Config: Trabajadoras Section
+   ============================================ */
+
+.config-worker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.config-worker-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.config-worker-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-brown);
+}
+
+.config-worker-pcts {
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+}
+
+.config-worker-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.config-worker-pct-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.config-worker-pct-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.config-worker-pct-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-gray-400);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.config-worker-pct-field .input {
+  min-height: 44px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* ============================================
+   Cita: Comisiones Step
+   ============================================ */
+
+.comision-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comision-item-card {
+  background: var(--color-white);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.comision-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.comision-item-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-brown);
+}
+
+.comision-item-cost {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-green);
+}
+
+.comision-item-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 8px;
+}
+
+.comision-item-badge--servicio {
+  color: var(--color-purple);
+}
+
+.comision-item-badge--producto {
+  color: var(--color-gold);
+}
+
+.comision-select {
+  width: 100%;
+  padding: 10px 12px;
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  color: var(--color-brown);
+  background: var(--color-gray-100);
+  border: 2px solid var(--color-gray-300);
+  border-radius: var(--radius-sm);
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237A7168' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.comision-select:focus {
+  border-color: var(--color-gold);
+}
+
+.comision-preview {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-purple);
+}
+
+/* --- Summary comision tag --- */
+.summary-comision-tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--color-purple);
+  background: var(--color-purple-light);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.summary-value--comision {
+  color: var(--color-purple);
+}

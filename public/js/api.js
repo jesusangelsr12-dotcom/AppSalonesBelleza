@@ -45,11 +45,11 @@ export function getConfig(sheetId) {
   return fetchAPI(`config?sheet_id=${encodeURIComponent(sheetId)}`);
 }
 
-/** Actualizar configuración del salón (servicios y productos) */
-export function updateConfig(sheetId, servicios, productos) {
+/** Actualizar configuración del salón (servicios, productos, trabajadoras) */
+export function updateConfig(sheetId, servicios, productos, trabajadoras) {
   return fetchAPI('config', {
     method: 'POST',
-    body: { sheet_id: sheetId, servicios, productos },
+    body: { sheet_id: sheetId, servicios, productos, trabajadoras },
   });
 }
 

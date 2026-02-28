@@ -1,11 +1,12 @@
 /**
- * Flujo Registrar Cita (6 pasos)
+ * Flujo Registrar Cita (hasta 7 pasos)
  * 1. Nombre de clienta
- * 2. Seleccionar servicios (multi-selección)
- * 3. Seleccionar productos (multi-selección, puede omitir)
+ * 2. Seleccionar servicios (multi-selecci\u00f3n)
+ * 3. Seleccionar productos (multi-selecci\u00f3n, puede omitir)
  * 4. Poner precio a cada item seleccionado (uno por uno)
- * 5. Método de pago
- * 6. Confirmación con desglose y total
+ * 5. Asignar comisiones a trabajadoras (opcional, se salta si no hay trabajadoras)
+ * 6. M\u00e9todo de pago
+ * 7. Confirmaci\u00f3n con desglose, comisiones y total
  */
 
 import { createCita } from '../api.js';
@@ -18,21 +19,33 @@ let step = 1;
 // Estado de la cita
 let cita = {
   clienta: '',
-  selectedServicios: [],   // nombres seleccionados
-  selectedProductos: [],    // nombres seleccionados
-  items: [],                // [{tipo, nombre, costo}] ya con precios
+  selectedServicios: [],
+  selectedProductos: [],
+  items: [],              // [{tipo, nombre, costo}]
+  comisionesMap: {},       // { itemIndex: { trabajadora, pct, comision } }
   metodo_pago: '',
 };
 
-// Para el paso 4: pricing item por item
-let pricingItems = [];    // lista de {tipo, nombre} a ponerle precio
-let pricingIndex = 0;     // cuál estamos editando
-let currentCosto = '';    // string del teclado numérico
+// Para el paso 4: pricing
+let pricingItems = [];
+let pricingIndex = 0;
+let currentCosto = '';
 
-const TOTAL_STEPS = 6;
+// N\u00famero din\u00e1mico de pasos (7 si hay trabajadoras, 6 si no)
+function getTotalSteps() {
+  const trabajadoras = session?.trabajadoras || [];
+  return trabajadoras.length > 0 ? 7 : 6;
+}
+
+// Mapea step l\u00f3gico seg\u00fan si hay trabajadoras
+function getStepAfterPricing() {
+  const trabajadoras = session?.trabajadoras || [];
+  return trabajadoras.length > 0 ? 5 : 6; // 5=comisiones, 6=pago (si no hay trabajadoras, salta a pago=5 pero mapeamos)
+}
 
 export function render(s) {
   session = s;
+  const totalSteps = getTotalSteps();
   return `
     <div class="screen" id="cita-screen">
       <header class="screen-header">
@@ -41,7 +54,7 @@ export function render(s) {
       </header>
 
       <div class="step-indicator" id="step-indicator">
-        ${Array.from({ length: TOTAL_STEPS }, () => '<div class="step-dot"></div>').join('')}
+        ${Array.from({ length: totalSteps }, () => '<div class="step-dot"></div>').join('')}
       </div>
 
       <div id="cita-step-content"></div>
@@ -57,6 +70,7 @@ export function init(s) {
     selectedServicios: [],
     selectedProductos: [],
     items: [],
+    comisionesMap: {},
     metodo_pago: '',
   };
   pricingItems = [];
@@ -69,12 +83,18 @@ export function init(s) {
 
 function handleBack() {
   if (step === 4 && pricingIndex > 0) {
-    // Retroceder al item anterior en pricing
     pricingIndex--;
     currentCosto = String(pricingItems[pricingIndex].costo || '');
     renderStep();
   } else if (step > 1) {
-    step--;
+    // Si estamos en paso de pago y no hay trabajadoras, volver a pricing (no a comisiones)
+    if (step === 6 && getTotalSteps() === 6) {
+      step = 4;
+      pricingIndex = pricingItems.length - 1;
+      currentCosto = String(pricingItems[pricingIndex].costo || '');
+    } else {
+      step--;
+    }
     renderStep();
   } else {
     navigateTo('home');
@@ -99,6 +119,7 @@ function renderStep() {
     case 4: renderStep4(container); break;
     case 5: renderStep5(container); break;
     case 6: renderStep6(container); break;
+    case 7: renderStep7(container); break;
   }
 }
 
@@ -129,7 +150,7 @@ function renderStep1(el) {
   input.focus();
 }
 
-// Paso 2: Servicios (multi-selección)
+// Paso 2: Servicios (multi-selecci\u00f3n)
 function renderStep2(el) {
   const servicios = session?.servicios || [];
 
@@ -171,11 +192,8 @@ function renderStep2(el) {
     if (!card) return;
     const name = card.dataset.servicio;
     const idx = cita.selectedServicios.indexOf(name);
-    if (idx >= 0) {
-      cita.selectedServicios.splice(idx, 1);
-    } else {
-      cita.selectedServicios.push(name);
-    }
+    if (idx >= 0) cita.selectedServicios.splice(idx, 1);
+    else cita.selectedServicios.push(name);
     renderStep2(el);
   });
 
@@ -189,12 +207,11 @@ function renderStep2(el) {
   });
 }
 
-// Paso 3: Productos (multi-selección, puede omitir)
+// Paso 3: Productos (multi-selecci\u00f3n, puede omitir)
 function renderStep3(el) {
   const productosDisp = session?.productos || [];
 
   if (productosDisp.length === 0) {
-    // No hay productos configurados, saltar
     cita.selectedProductos = [];
     preparePricing();
     step = 4;
@@ -229,11 +246,8 @@ function renderStep3(el) {
     if (!card) return;
     const name = card.dataset.producto;
     const idx = cita.selectedProductos.indexOf(name);
-    if (idx >= 0) {
-      cita.selectedProductos.splice(idx, 1);
-    } else {
-      cita.selectedProductos.push(name);
-    }
+    if (idx >= 0) cita.selectedProductos.splice(idx, 1);
+    else cita.selectedProductos.push(name);
     renderStep3(el);
   });
 
@@ -255,7 +269,6 @@ function renderStep3(el) {
   });
 }
 
-// Preparar lista de items para pricing
 function preparePricing() {
   pricingItems = [
     ...cita.selectedServicios.map((name) => ({ tipo: 'servicio', nombre: name, costo: '' })),
@@ -269,8 +282,7 @@ function preparePricing() {
 function renderStep4(el) {
   const item = pricingItems[pricingIndex];
   const totalItems = pricingItems.length;
-  const isServicio = item.tipo === 'servicio';
-  const tipoLabel = isServicio ? 'Servicio' : 'Producto';
+  const tipoLabel = item.tipo === 'servicio' ? 'Servicio' : 'Producto';
 
   el.innerHTML = `
     <div class="step-content">
@@ -312,22 +324,26 @@ function renderStep4(el) {
         showToast('Ingresa el costo', 'error');
         return;
       }
-      // Guardar precio del item actual
       pricingItems[pricingIndex].costo = currentCosto;
 
       if (pricingIndex < pricingItems.length - 1) {
-        // Ir al siguiente item
         pricingIndex++;
         currentCosto = pricingItems[pricingIndex].costo || '';
         renderStep();
       } else {
-        // Todos los items tienen precio, avanzar
+        // Guardar items con precios
         cita.items = pricingItems.map((it) => ({
           tipo: it.tipo,
           nombre: it.nombre,
           costo: parseFloat(it.costo),
         }));
-        step = 5;
+        // Ir a comisiones o pago
+        const trabajadoras = session?.trabajadoras || [];
+        if (trabajadoras.length > 0) {
+          step = 5;
+        } else {
+          step = 6; // saltar comisiones, ir directo a pago
+        }
         renderStep();
       }
       return;
@@ -340,8 +356,86 @@ function renderStep4(el) {
   });
 }
 
-// Paso 5: Método de pago
+// Paso 5: Comisiones (asignar trabajadora a cada item)
 function renderStep5(el) {
+  const trabajadoras = session?.trabajadoras || [];
+
+  el.innerHTML = `
+    <div class="step-content">
+      <label class="input-label">Comisiones (opcional)</label>
+      <p class="multi-select-hint">Asigna una trabajadora si aplica comisi\u00f3n</p>
+
+      <div class="comision-items-list" id="comision-items-list">
+        ${cita.items.map((item, i) => {
+          const assigned = cita.comisionesMap[i];
+          const pctKey = item.tipo === 'servicio' ? 'pct_servicio' : 'pct_producto';
+          return `
+            <div class="comision-item-card">
+              <div class="comision-item-header">
+                <span class="comision-item-name">${item.nombre}</span>
+                <span class="comision-item-cost">${formatMXN(item.costo)}</span>
+              </div>
+              <div class="comision-item-badge comision-item-badge--${item.tipo}">
+                ${item.tipo === 'servicio' ? 'Servicio' : 'Producto'}
+              </div>
+              <select class="comision-select" data-index="${i}">
+                <option value="">Sin comisi\u00f3n</option>
+                ${trabajadoras.map((t) => `
+                  <option value="${t.nombre}" ${assigned && assigned.trabajadora === t.nombre ? 'selected' : ''}>
+                    ${t.nombre} (${t[pctKey]}%)
+                  </option>
+                `).join('')}
+              </select>
+              ${assigned ? `
+                <div class="comision-preview">
+                  Comisi\u00f3n: ${formatMXN(assigned.comision)}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <div class="step-actions mt-24">
+        <button class="btn btn-outline" id="btn-skip-comisiones">Sin comisiones</button>
+        <button class="btn btn-primary" id="btn-step5">Siguiente</button>
+      </div>
+    </div>
+  `;
+
+  // Escuchar cambios en selects
+  el.querySelectorAll('.comision-select').forEach((select) => {
+    select.addEventListener('change', () => {
+      const idx = parseInt(select.dataset.index, 10);
+      const workerName = select.value;
+
+      if (!workerName) {
+        delete cita.comisionesMap[idx];
+      } else {
+        const worker = trabajadoras.find((t) => t.nombre === workerName);
+        const item = cita.items[idx];
+        const pct = item.tipo === 'servicio' ? worker.pct_servicio : worker.pct_producto;
+        const comision = Math.round(item.costo * pct / 100 * 100) / 100;
+        cita.comisionesMap[idx] = { trabajadora: workerName, pct, comision };
+      }
+      renderStep5(el);
+    });
+  });
+
+  document.getElementById('btn-skip-comisiones').addEventListener('click', () => {
+    cita.comisionesMap = {};
+    step = 6;
+    renderStep();
+  });
+
+  document.getElementById('btn-step5').addEventListener('click', () => {
+    step = 6;
+    renderStep();
+  });
+}
+
+// Paso 6: M\u00e9todo de pago
+function renderStep6(el) {
   const metodos = [
     { id: 'Efectivo', emoji: '\ud83d\udcb5', label: 'Efectivo' },
     { id: 'Tarjeta', emoji: '\ud83d\udcb3', label: 'Tarjeta' },
@@ -366,16 +460,17 @@ function renderStep5(el) {
     const card = e.target.closest('[data-metodo]');
     if (!card) return;
     cita.metodo_pago = card.dataset.metodo;
-    step = 6;
+    step = 7;
     renderStep();
   });
 }
 
-// Paso 6: Confirmación con desglose
-function renderStep6(el) {
+// Paso 7: Confirmaci\u00f3n con desglose y comisiones
+function renderStep7(el) {
   const total = cita.items.reduce((sum, it) => sum + it.costo, 0);
   const serviciosItems = cita.items.filter((it) => it.tipo === 'servicio');
   const productosItems = cita.items.filter((it) => it.tipo === 'producto');
+  const comisionesList = Object.entries(cita.comisionesMap);
 
   el.innerHTML = `
     <div class="step-content">
@@ -388,28 +483,55 @@ function renderStep6(el) {
 
         ${serviciosItems.length > 0 ? `
           <div class="summary-section-title">Servicios</div>
-          ${serviciosItems.map((it) => `
-            <div class="summary-row summary-row--item">
-              <span class="summary-label">${it.nombre}</span>
-              <span class="summary-value">${formatMXN(it.costo)}</span>
-            </div>
-          `).join('')}
+          ${serviciosItems.map((it) => {
+            const idx = cita.items.indexOf(it);
+            const com = cita.comisionesMap[idx];
+            return `
+              <div class="summary-row summary-row--item">
+                <span class="summary-label">
+                  ${it.nombre}
+                  ${com ? `<span class="summary-comision-tag">${com.trabajadora} ${com.pct}%</span>` : ''}
+                </span>
+                <span class="summary-value">${formatMXN(it.costo)}</span>
+              </div>
+            `;
+          }).join('')}
         ` : ''}
 
         ${productosItems.length > 0 ? `
           <div class="summary-section-title">Productos</div>
-          ${productosItems.map((it) => `
-            <div class="summary-row summary-row--item">
-              <span class="summary-label">${it.nombre}</span>
-              <span class="summary-value">${formatMXN(it.costo)}</span>
-            </div>
-          `).join('')}
+          ${productosItems.map((it) => {
+            const idx = cita.items.indexOf(it);
+            const com = cita.comisionesMap[idx];
+            return `
+              <div class="summary-row summary-row--item">
+                <span class="summary-label">
+                  ${it.nombre}
+                  ${com ? `<span class="summary-comision-tag">${com.trabajadora} ${com.pct}%</span>` : ''}
+                </span>
+                <span class="summary-value">${formatMXN(it.costo)}</span>
+              </div>
+            `;
+          }).join('')}
         ` : ''}
 
         <div class="summary-row summary-row--total">
           <span class="summary-label">Total</span>
           <span class="summary-value summary-value--total">${formatMXN(total)}</span>
         </div>
+
+        ${comisionesList.length > 0 ? `
+          <div class="summary-section-title">Comisiones</div>
+          ${comisionesList.map(([idx, com]) => {
+            const item = cita.items[parseInt(idx, 10)];
+            return `
+              <div class="summary-row summary-row--item">
+                <span class="summary-label">${com.trabajadora} \u2014 ${item.nombre}</span>
+                <span class="summary-value summary-value--comision">${formatMXN(com.comision)}</span>
+              </div>
+            `;
+          }).join('')}
+        ` : ''}
 
         <div class="summary-row">
           <span class="summary-label">Pago</span>
@@ -428,6 +550,19 @@ async function submitCita() {
     showLoader();
     const total = cita.items.reduce((sum, it) => sum + it.costo, 0);
 
+    // Armar array de comisiones para la hoja separada
+    const comisiones = Object.entries(cita.comisionesMap).map(([idx, com]) => {
+      const item = cita.items[parseInt(idx, 10)];
+      return {
+        trabajadora: com.trabajadora,
+        item: item.nombre,
+        tipo: item.tipo,
+        costo: item.costo,
+        pct: com.pct,
+        comision: com.comision,
+      };
+    });
+
     await createCita(session.sheet_id, {
       fecha: todayISO(),
       timestamp: nowTimestamp(),
@@ -435,6 +570,7 @@ async function submitCita() {
       items: cita.items,
       total,
       metodo_pago: cita.metodo_pago,
+      comisiones,
     });
     hideLoader();
     showToast('Cita registrada correctamente', 'success');

@@ -1,11 +1,19 @@
 /**
  * GET/POST /api/config
- * Lee o actualiza el catálogo de servicios y productos de un salón.
- * GET  ?sheet_id=xxx → { salon_nombre, logo_url, servicios, productos }
- * POST { sheet_id, servicios, productos } → { success }
+ * Lee o actualiza el catálogo de servicios, productos y trabajadoras.
+ * GET  ?sheet_id=xxx → { salon_nombre, logo_url, servicios, productos, trabajadoras }
+ * POST { sheet_id, servicios, productos, trabajadoras } → { success }
+ *
+ * Config columns: A=salon_nombre, B=logo_url, C=pin_hash, D=servicios, E=productos, F=trabajadoras
+ * trabajadoras JSON: [{"nombre":"Ana","pct_servicio":10,"pct_producto":5}, ...]
  */
 
 const { readSheet, updateSheet } = require('../lib/sheets');
+
+function safeParseJSON(str, fallback) {
+  try { return JSON.parse(str || JSON.stringify(fallback)); }
+  catch { return fallback; }
+}
 
 module.exports = async function handler(req, res) {
   try {
@@ -15,45 +23,35 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'Falta sheet_id' });
       }
 
-      const rows = await readSheet(sheetId, 'Config!A:E');
-      const data = rows[1]; // Row 0 = headers
+      const rows = await readSheet(sheetId, 'Config!A:F');
+      const data = rows[1];
 
       if (!data) {
         return res.status(404).json({ error: 'Config no encontrada' });
       }
 
-      let servicios = [];
-      try {
-        servicios = JSON.parse(data[3] || '[]');
-      } catch {
-        servicios = [];
-      }
-
-      let productos = [];
-      try {
-        productos = JSON.parse(data[4] || '[]');
-      } catch {
-        productos = [];
-      }
-
       return res.status(200).json({
         salon_nombre: data[0],
         logo_url: data[1] || '',
-        servicios,
-        productos,
+        servicios: safeParseJSON(data[3], []),
+        productos: safeParseJSON(data[4], []),
+        trabajadoras: safeParseJSON(data[5], []),
       });
     }
 
     if (req.method === 'POST') {
-      const { sheet_id, servicios, productos } = req.body;
+      const { sheet_id, servicios, productos, trabajadoras } = req.body;
 
       if (!sheet_id) {
         return res.status(400).json({ error: 'Faltan datos requeridos' });
       }
 
-      // Actualizar columnas D (servicios) y E (productos) fila 2
-      await updateSheet(sheet_id, 'Config!D2:E2', [
-        [JSON.stringify(servicios || []), JSON.stringify(productos || [])],
+      await updateSheet(sheet_id, 'Config!D2:F2', [
+        [
+          JSON.stringify(servicios || []),
+          JSON.stringify(productos || []),
+          JSON.stringify(trabajadoras || []),
+        ],
       ]);
 
       return res.status(200).json({ success: true });

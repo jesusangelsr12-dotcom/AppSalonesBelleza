@@ -49,7 +49,7 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { sheet_id, fecha, timestamp, clienta, items, total, metodo_pago } = req.body;
+      const { sheet_id, fecha, timestamp, clienta, items, total, metodo_pago, comisiones } = req.body;
 
       if (!sheet_id || !fecha || !clienta || !items || total === undefined || !metodo_pago) {
         return res.status(400).json({ error: 'Faltan datos requeridos' });
@@ -58,6 +58,23 @@ module.exports = async function handler(req, res) {
       await appendSheet(sheet_id, 'Citas!A:F', [
         [fecha, timestamp, clienta, JSON.stringify(items), String(total), metodo_pago],
       ]);
+
+      // Escribir comisiones en hoja separada si existen
+      // Comisiones cols: fecha, timestamp, clienta, trabajadora, item, tipo, costo, pct, comision
+      if (comisiones && comisiones.length > 0) {
+        const comisionRows = comisiones.map((c) => [
+          fecha,
+          timestamp,
+          clienta,
+          c.trabajadora,
+          c.item,
+          c.tipo,
+          String(c.costo),
+          String(c.pct),
+          String(c.comision),
+        ]);
+        await appendSheet(sheet_id, 'Comisiones!A:I', comisionRows);
+      }
 
       return res.status(201).json({ success: true });
     }

@@ -163,7 +163,10 @@ function buildItemsBreakdown(items) {
           <span class="record-items-badge record-items-badge--${it.tipo}">
             ${it.tipo === 'servicio' ? 'S' : 'P'}
           </span>
-          <span class="record-items-name">${it.nombre}</span>
+          <span class="record-items-name">
+            ${it.nombre}
+            ${it.trabajadora ? `<span class="record-items-worker">${it.trabajadora} ${it.pct}%</span>` : ''}
+          </span>
           <span class="record-items-cost">${formatMXN(it.costo)}</span>
         </div>
       `).join('')}
