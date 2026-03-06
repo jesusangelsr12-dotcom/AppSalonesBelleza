@@ -1,40 +1,53 @@
 /* ============================================
    JR Consulting — Salones de Belleza
-   Design System & Global Styles
+   Design System v2 — Lovi-inspired, Warm Palette
+   Clean · Soft · Rounded · Cozy
    ============================================ */
 
 /* --- CSS Variables (Design Tokens) --- */
 :root {
-  --color-bg: #F5F0E8;
-  --color-brown: #3D2B1F;
-  --color-brown-light: #5C4433;
-  --color-gold: #C9A84C;
-  --color-gold-light: #D4BA6A;
-  --color-green: #7BAE7F;
-  --color-green-light: #A3C9A6;
-  --color-purple: #9B7EC8;
-  --color-purple-light: #B9A3D8;
-  --color-white: #FFFFFF;
-  --color-gray-100: #F9F7F4;
-  --color-gray-200: #EDE8E0;
-  --color-gray-300: #D5CEC4;
-  --color-gray-400: #A89F94;
-  --color-gray-500: #7A7168;
-  --color-error: #D94F4F;
-  --color-error-light: #FDEAEA;
+  /* Warm browns & cream */
+  --color-bg: #FAF7F2;
+  --color-surface: #FFFFFF;
+  --color-brown: #2C1810;
+  --color-brown-light: #4A3228;
+  --color-brown-muted: #6B5345;
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  /* Warm accent — caramel/amber */
+  --color-accent: #C4956A;
+  --color-accent-light: #D4AA82;
+  --color-accent-bg: #FDF5EE;
+
+  /* Status colors — softened */
+  --color-green: #7BAE7F;
+  --color-green-light: #E8F5E9;
+  --color-purple: #9B7EC8;
+  --color-purple-light: #F0EAF8;
+  --color-error: #C9544D;
+  --color-error-light: #FDF0EF;
+
+  /* Neutrals — warm toned */
+  --color-gray-100: #FAF8F5;
+  --color-gray-200: #F0ECE6;
+  --color-gray-300: #DDD6CC;
+  --color-gray-400: #B5AA9D;
+  --color-gray-500: #8A7E72;
+
+  /* Radii — extra rounded (Lovi-style) */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
   --radius-full: 9999px;
 
-  --shadow-sm: 0 1px 3px rgba(61, 43, 31, 0.08);
-  --shadow-md: 0 4px 12px rgba(61, 43, 31, 0.1);
-  --shadow-lg: 0 8px 24px rgba(61, 43, 31, 0.12);
+  /* Shadows — very soft, warm */
+  --shadow-sm: 0 1px 4px rgba(44, 24, 16, 0.04);
+  --shadow-md: 0 4px 16px rgba(44, 24, 16, 0.06);
+  --shadow-lg: 0 8px 32px rgba(44, 24, 16, 0.08);
 
+  /* Type */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --transition: 200ms ease;
+  --transition: 220ms ease;
 }
 
 /* --- Reset & Base --- */
@@ -69,10 +82,10 @@ body {
 }
 
 /* --- Typography --- */
-h1 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; }
-h2 { font-size: 1.25rem; font-weight: 600; line-height: 1.3; }
+h1 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; letter-spacing: -0.3px; }
+h2 { font-size: 1.25rem; font-weight: 600; line-height: 1.3; letter-spacing: -0.2px; }
 h3 { font-size: 1.1rem; font-weight: 600; line-height: 1.3; }
-p  { font-size: 0.95rem; line-height: 1.5; }
+p  { font-size: 0.95rem; line-height: 1.6; }
 small { font-size: 0.8rem; color: var(--color-gray-500); }
 
 /* --- Screen Layout --- */
@@ -110,25 +123,6 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   object-fit: cover;
 }
 
-.header-back {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  color: var(--color-brown);
-  font-size: 1.25rem;
-  cursor: pointer;
-  border-radius: var(--radius-full);
-  transition: background var(--transition);
-}
-
-.header-back:active {
-  background: var(--color-gray-200);
-}
-
 /* --- Buttons --- */
 .btn {
   display: flex;
@@ -155,7 +149,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 
 .btn-primary {
   background: var(--color-brown);
-  color: var(--color-white);
+  color: var(--color-surface);
 }
 
 .btn-primary:active {
@@ -163,18 +157,18 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .btn-gold {
-  background: var(--color-gold);
-  color: var(--color-brown);
+  background: var(--color-accent);
+  color: var(--color-surface);
 }
 
 .btn-gold:active {
-  background: var(--color-gold-light);
+  background: var(--color-accent-light);
 }
 
 .btn-outline {
   background: transparent;
   color: var(--color-brown);
-  border: 2px solid var(--color-gray-300);
+  border: 1.5px solid var(--color-gray-300);
 }
 
 .btn-outline:active {
@@ -191,7 +185,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 
 /* --- Cards --- */
 .card {
-  background: var(--color-white);
+  background: var(--color-surface);
   border-radius: var(--radius-lg);
   padding: 20px;
   box-shadow: var(--shadow-sm);
@@ -208,13 +202,13 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .card-selectable.selected {
-  border-color: var(--color-gold);
+  border-color: var(--color-accent);
   box-shadow: var(--shadow-md);
 }
 
 /* --- Big Action Cards (Home) --- */
 .action-card {
-  background: var(--color-white);
+  background: var(--color-surface);
   border-radius: var(--radius-lg);
   padding: 24px 20px;
   display: flex;
@@ -252,7 +246,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 
 .input-group label {
   display: block;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-gray-500);
   margin-bottom: 8px;
@@ -267,15 +261,16 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   font-family: var(--font-family);
   font-size: 1rem;
   color: var(--color-brown);
-  background: var(--color-white);
-  border: 2px solid var(--color-gray-300);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-gray-300);
   border-radius: var(--radius-md);
   outline: none;
-  transition: border-color var(--transition);
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
 .input:focus {
-  border-color: var(--color-gold);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(196, 149, 106, 0.12);
 }
 
 .input::placeholder {
@@ -286,19 +281,19 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 .keypad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  max-width: 340px;
+  gap: 10px;
+  max-width: 320px;
   width: 100%;
   margin: 0 auto;
 }
 
 .keypad-key {
-  min-height: 64px;
+  min-height: 60px;
   font-family: var(--font-family);
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 600;
   color: var(--color-brown);
-  background: var(--color-white);
+  background: var(--color-surface);
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
@@ -335,8 +330,8 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .pin-dot {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: var(--radius-full);
   border: 2px solid var(--color-gray-300);
   background: transparent;
@@ -344,8 +339,8 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .pin-dot.filled {
-  background: var(--color-gold);
-  border-color: var(--color-gold);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 .pin-dot.error {
@@ -363,13 +358,14 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 /* --- Amount Display --- */
 .amount-display {
   text-align: center;
-  padding: 24px;
+  padding: 28px 24px;
 }
 
 .amount-display-value {
-  font-size: 2.5rem;
+  font-size: 2.75rem;
   font-weight: 700;
   color: var(--color-brown);
+  letter-spacing: -1px;
 }
 
 .amount-display-currency {
@@ -389,10 +385,10 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 20px 12px;
-  background: var(--color-white);
-  border: 2px solid transparent;
+  gap: 10px;
+  padding: 24px 12px;
+  background: var(--color-surface);
+  border: 1.5px solid transparent;
   border-radius: var(--radius-lg);
   cursor: pointer;
   transition: all var(--transition);
@@ -405,8 +401,8 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .payment-card.selected {
-  border-color: var(--color-gold);
-  background: #FBF7EE;
+  border-color: var(--color-accent);
+  background: var(--color-accent-bg);
 }
 
 .payment-card-emoji {
@@ -428,15 +424,16 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .service-card {
-  padding: 16px;
-  background: var(--color-white);
-  border: 2px solid transparent;
+  padding: 18px 16px;
+  background: var(--color-surface);
+  border: 1.5px solid transparent;
   border-radius: var(--radius-lg);
   cursor: pointer;
   text-align: center;
   transition: all var(--transition);
   box-shadow: var(--shadow-sm);
   font-family: var(--font-family);
+  position: relative;
 }
 
 .service-card:active {
@@ -444,8 +441,8 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .service-card.selected {
-  border-color: var(--color-gold);
-  background: #FBF7EE;
+  border-color: var(--color-accent);
+  background: var(--color-accent-bg);
 }
 
 .service-card-name {
@@ -454,11 +451,21 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   color: var(--color-brown);
 }
 
+.service-card-check {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
 /* --- Summary (Confirmation Step) --- */
 .summary {
-  background: var(--color-white);
+  background: var(--color-surface);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .summary-row {
@@ -490,7 +497,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .records-section-title {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: var(--color-gray-500);
   text-transform: uppercase;
@@ -499,10 +506,10 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .record-item {
-  background: var(--color-white);
+  background: var(--color-surface);
   border-radius: var(--radius-md);
   padding: 16px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   box-shadow: var(--shadow-sm);
   display: flex;
   justify-content: space-between;
@@ -519,9 +526,9 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .record-subtitle {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--color-gray-500);
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .record-amount {
@@ -546,25 +553,26 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .total-card {
-  background: var(--color-white);
+  background: var(--color-surface);
   border-radius: var(--radius-lg);
-  padding: 16px;
+  padding: 18px 16px;
   text-align: center;
   box-shadow: var(--shadow-sm);
 }
 
 .total-card-label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--color-gray-500);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .total-card-value {
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 700;
+  letter-spacing: -0.3px;
 }
 
 .total-card-value--income {
@@ -592,7 +600,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .step-dot.active {
-  background: var(--color-gold);
+  background: var(--color-accent);
   width: 24px;
 }
 
@@ -603,8 +611,8 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   left: 50%;
   transform: translateX(-50%);
   background: var(--color-brown);
-  color: var(--color-white);
-  padding: 14px 24px;
+  color: var(--color-surface);
+  padding: 14px 28px;
   border-radius: var(--radius-full);
   font-size: 0.9rem;
   font-weight: 500;
@@ -623,21 +631,25 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 
 .toast.toast-success {
   background: var(--color-green);
+  color: var(--color-surface);
 }
 
 .toast.toast-error {
   background: var(--color-error);
+  color: var(--color-surface);
 }
 
 /* --- Loader --- */
 .loader {
   position: fixed;
   inset: 0;
-  background: rgba(245, 240, 232, 0.85);
+  background: rgba(250, 247, 242, 0.88);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .loader.hidden {
@@ -645,10 +657,10 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .loader-spinner {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: 3px solid var(--color-gray-300);
-  border-top-color: var(--color-gold);
+  border-top-color: var(--color-accent);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
 }
@@ -673,13 +685,13 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 /* --- Empty State --- */
 .empty-state {
   text-align: center;
-  padding: 40px 20px;
+  padding: 48px 20px;
   color: var(--color-gray-400);
 }
 
 .empty-state-emoji {
   font-size: 2.5rem;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .empty-state-text {
@@ -697,17 +709,16 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
    Login Screen
    ============================================ */
 
-/* --- JR Logo Circle --- */
 .login-logo {
-  width: 88px;
-  height: 88px;
-  border-radius: var(--radius-full);
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-xl);
   background: var(--color-brown);
-  color: var(--color-gold);
+  color: var(--color-accent);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: 1.8rem;
   font-weight: 700;
   letter-spacing: 2px;
   box-shadow: var(--shadow-lg);
@@ -726,13 +737,14 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
    ============================================ */
 
 .home-header {
-  padding: 24px 0 16px;
+  padding: 28px 0 20px;
 }
 
 .home-salon-name {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--color-brown);
+  letter-spacing: -0.4px;
 }
 
 .home-subtitle {
@@ -744,9 +756,9 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 .home-actions {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   flex: 1;
-  padding: 16px 0;
+  padding: 12px 0;
 }
 
 .home-action-card {
@@ -754,8 +766,8 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   align-items: center;
   gap: 16px;
   width: 100%;
-  padding: 20px;
-  background: var(--color-white);
+  padding: 22px 20px;
+  background: var(--color-surface);
   border: none;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
@@ -774,16 +786,26 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .home-action-emoji {
-  font-size: 1.75rem;
+  font-size: 1.6rem;
   flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-gray-100);
+  border-radius: var(--radius-md);
 }
 
 .home-action-card--sm .home-action-emoji {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
 }
 
 .home-action-label {
-  font-size: 1.05rem;
+  font-size: 1.02rem;
   font-weight: 600;
   color: var(--color-brown);
 }
@@ -807,7 +829,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   border: 1px solid var(--color-gray-300);
   border-radius: var(--radius-md);
   color: var(--color-gray-500);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 500;
   font-family: var(--font-family);
   cursor: pointer;
@@ -838,7 +860,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 .header-back {
   background: none;
   border: none;
-  color: var(--color-gold);
+  color: var(--color-accent);
   font-size: 0.95rem;
   font-weight: 600;
   font-family: var(--font-family);
@@ -848,7 +870,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 
 .input-label {
   display: block;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-gray-500);
   text-transform: uppercase;
@@ -862,9 +884,13 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 
 /* --- Confirm button in keypad --- */
 .keypad-key--confirm {
-  background: var(--color-gold);
-  color: var(--color-brown);
+  background: var(--color-accent);
+  color: var(--color-surface);
   font-weight: 700;
+}
+
+.keypad-key--confirm:active {
+  background: var(--color-accent-light);
 }
 
 /* ============================================
@@ -875,7 +901,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--color-white);
+  background: var(--color-surface);
   border-radius: var(--radius-md);
   padding: 14px 16px;
   box-shadow: var(--shadow-sm);
@@ -901,7 +927,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 
 .config-service-delete:active {
   color: var(--color-error);
-  background: rgba(220, 53, 69, 0.1);
+  background: var(--color-error-light);
 }
 
 .config-add-row {
@@ -972,12 +998,14 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 .delete-modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(61, 43, 31, 0.5);
+  background: rgba(44, 24, 16, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .delete-modal-content {
   position: relative;
-  background: var(--color-white);
+  background: var(--color-surface);
   border-radius: var(--radius-xl);
   padding: 32px 24px 24px;
   max-width: 320px;
@@ -1019,12 +1047,12 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 
 .delete-modal-btn--confirm {
   background: var(--color-error);
-  color: var(--color-white);
+  color: var(--color-surface);
   border: none;
 }
 
 .delete-modal-btn--confirm:active {
-  background: #c0392b;
+  background: #b5423c;
 }
 
 /* ============================================
@@ -1035,19 +1063,6 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   font-size: 0.82rem;
   color: var(--color-gray-400);
   margin-bottom: 16px;
-}
-
-.service-card {
-  position: relative;
-}
-
-.service-card-check {
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--color-gold);
 }
 
 .step-actions {
@@ -1062,15 +1077,16 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 /* --- Pricing Item Name & Badge --- */
 .pricing-item-name {
   text-align: center;
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: var(--color-brown);
   margin-bottom: 4px;
+  letter-spacing: -0.3px;
 }
 
 .pricing-item-badge {
   text-align: center;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1082,12 +1098,12 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .pricing-item-badge--producto {
-  color: var(--color-gold);
+  color: var(--color-accent);
 }
 
 /* --- Summary Section Title --- */
 .summary-section-title {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--color-gray-400);
   text-transform: uppercase;
@@ -1126,8 +1142,8 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .record-items-breakdown {
-  margin-top: 8px;
-  padding-top: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid var(--color-gray-200);
 }
 
@@ -1135,20 +1151,20 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 3px 0;
+  padding: 4px 0;
   font-size: 0.8rem;
 }
 
 .record-items-badge {
-  width: 18px;
-  height: 18px;
-  border-radius: var(--radius-full);
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.6rem;
   font-weight: 700;
-  color: var(--color-white);
+  color: var(--color-surface);
   flex-shrink: 0;
 }
 
@@ -1157,7 +1173,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .record-items-badge--producto {
-  background: var(--color-gold);
+  background: var(--color-accent);
 }
 
 .record-items-name {
@@ -1172,11 +1188,11 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 
 .record-items-worker {
   display: inline-block;
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 600;
   color: var(--color-purple);
   background: var(--color-purple-light);
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: var(--radius-full);
   margin-left: 4px;
   vertical-align: middle;
@@ -1190,7 +1206,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--color-white);
+  background: var(--color-surface);
   border-radius: var(--radius-md);
   padding: 14px 16px;
   box-shadow: var(--shadow-sm);
@@ -1256,9 +1272,9 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .comision-item-card {
-  background: var(--color-white);
+  background: var(--color-surface);
   border-radius: var(--radius-md);
-  padding: 14px 16px;
+  padding: 16px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -1294,7 +1310,7 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .comision-item-badge--producto {
-  color: var(--color-gold);
+  color: var(--color-accent);
 }
 
 .comision-select {
@@ -1304,23 +1320,24 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   font-size: 0.9rem;
   color: var(--color-brown);
   background: var(--color-gray-100);
-  border: 2px solid var(--color-gray-300);
+  border: 1.5px solid var(--color-gray-300);
   border-radius: var(--radius-sm);
   outline: none;
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237A7168' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238A7E72' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
+  transition: border-color var(--transition);
 }
 
 .comision-select:focus {
-  border-color: var(--color-gold);
+  border-color: var(--color-accent);
 }
 
 .comision-preview {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--color-purple);
@@ -1329,11 +1346,11 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 /* --- Summary comision tag --- */
 .summary-comision-tag {
   display: inline-block;
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 600;
   color: var(--color-purple);
   background: var(--color-purple-light);
-  padding: 1px 6px;
+  padding: 2px 7px;
   border-radius: var(--radius-full);
   margin-left: 4px;
   vertical-align: middle;

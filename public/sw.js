@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jr-salones-v4';
+const CACHE_NAME = 'jr-salones-v5';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -18,7 +18,20 @@ const STATIC_ASSETS = [
   '/icons/icon-512.png'
 ];
 
-// Instalar: cachear assets estáticos
+// Assets that should use network-first strategy (code & styles change often)
+const NETWORK_FIRST_PATTERNS = [
+  /\.css(\?.*)?$/,
+  /\.js(\?.*)?$/,
+  /\/index\.html(\?.*)?$/,
+  /\/$/
+];
+
+function isNetworkFirst(url) {
+  const pathname = new URL(url).pathname + new URL(url).search;
+  return NETWORK_FIRST_PATTERNS.some((p) => p.test(pathname));
+}
+
+// Instalar: cachear assets est\u00e1ticos
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -27,7 +40,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activar: limpiar caches viejos
+// Activar: limpiar caches viejos + tomar control inmediato
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
@@ -39,17 +52,17 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: cache-first para assets, network-first para API
+// Fetch: network-first para JS/CSS/HTML, cache-first para im\u00e1genes/fonts, network-only para API
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Las llamadas a /api/ siempre van a la red
+  // API calls: network-only
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request).catch(() =>
         new Response(
-          JSON.stringify({ error: 'Sin conexión a internet' }),
+          JSON.stringify({ error: 'Sin conexi\u00f3n a internet' }),
           { status: 503, headers: { 'Content-Type': 'application/json' } }
         )
       )
@@ -57,12 +70,27 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Assets estáticos: cache-first, fallback a red
+  // JS, CSS, HTML: network-first (always get latest, fallback to cache)
+  if (url.origin === self.location.origin && isNetworkFirst(request.url)) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Everything else (images, fonts, manifest): cache-first
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
       return fetch(request).then((response) => {
-        // Cachear recursos nuevos (fonts, etc.)
         if (response.ok && url.origin === self.location.origin) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));

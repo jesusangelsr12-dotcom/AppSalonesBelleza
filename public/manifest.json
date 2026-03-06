@@ -4,8 +4,8 @@
   "description": "Administración de citas y gastos para salones de belleza",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F5F0E8",
-  "theme_color": "#3D2B1F",
+  "background_color": "#FAF7F2",
+  "theme_color": "#2C1810",
   "orientation": "portrait",
   "icons": [
     {

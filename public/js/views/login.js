@@ -124,6 +124,8 @@ async function validatePin() {
       sheet_id: result.sheet_id,
       logo_url: result.logo_url,
       servicios: result.servicios,
+      productos: result.productos,
+      trabajadoras: result.trabajadoras,
     });
 
     hideLoader();
