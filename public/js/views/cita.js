@@ -1,20 +1,21 @@
 /**
  * Flujo Registrar Cita (hasta 7 pasos)
- * 1. Nombre de clienta
- * 2. Seleccionar servicios (multi-selecci\u00f3n)
- * 3. Seleccionar productos (multi-selecci\u00f3n, puede omitir)
+ * 1. Nombre de clienta (con autocomplete)
+ * 2. Seleccionar servicios (multi-selección)
+ * 3. Seleccionar productos (multi-selección, puede omitir)
  * 4. Poner precio a cada item seleccionado (uno por uno)
  * 5. Asignar comisiones a trabajadoras (opcional, se salta si no hay trabajadoras)
- * 6. M\u00e9todo de pago
- * 7. Confirmaci\u00f3n con desglose, comisiones y total
+ * 6. Método de pago
+ * 7. Confirmación con desglose, comisiones y total
  */
 
-import { createCita } from '../api.js';
+import { createCita, getClientas } from '../api.js';
 import { formatMXN, todayISO, nowTimestamp, showToast, showLoader, hideLoader } from '../utils.js';
 import { navigateTo } from '../app.js';
 
 let session = null;
 let step = 1;
+let allClientas = [];
 
 // Estado de la cita
 let cita = {
@@ -31,16 +32,10 @@ let pricingItems = [];
 let pricingIndex = 0;
 let currentCosto = '';
 
-// N\u00famero din\u00e1mico de pasos (7 si hay trabajadoras, 6 si no)
+// Número dinámico de pasos (7 si hay trabajadoras, 6 si no)
 function getTotalSteps() {
   const trabajadoras = session?.trabajadoras || [];
   return trabajadoras.length > 0 ? 7 : 6;
-}
-
-// Mapea step l\u00f3gico seg\u00fan si hay trabajadoras
-function getStepAfterPricing() {
-  const trabajadoras = session?.trabajadoras || [];
-  return trabajadoras.length > 0 ? 5 : 6; // 5=comisiones, 6=pago (si no hay trabajadoras, salta a pago=5 pero mapeamos)
 }
 
 export function render(s) {
@@ -76,9 +71,17 @@ export function init(s) {
   pricingItems = [];
   pricingIndex = 0;
   currentCosto = '';
+  allClientas = [];
 
   document.getElementById('cita-back').addEventListener('click', handleBack);
   renderStep();
+
+  // Cargar clientas para autocomplete (non-blocking)
+  if (session?.sheet_id) {
+    getClientas(session.sheet_id)
+      .then((res) => { allClientas = res.clientas || []; })
+      .catch(() => { /* silencioso */ });
+  }
 }
 
 function handleBack() {
@@ -123,18 +126,22 @@ function renderStep() {
   }
 }
 
-// Paso 1: Nombre de clienta
+// Paso 1: Nombre de clienta (con autocomplete)
 function renderStep1(el) {
   el.innerHTML = `
     <div class="step-content">
       <label class="input-label">Nombre de la clienta</label>
-      <input type="text" class="input" id="input-clienta" placeholder="Ej: Mar\u00eda L\u00f3pez"
-        value="${cita.clienta}" autocomplete="off">
+      <div class="clienta-input-wrapper">
+        <input type="text" class="input" id="input-clienta" placeholder="Ej: Mar\u00eda L\u00f3pez"
+          value="${cita.clienta}" autocomplete="off">
+        <div class="clienta-suggestions hidden" id="clienta-suggestions"></div>
+      </div>
       <button class="btn btn-primary mt-24" id="btn-step1">Siguiente</button>
     </div>
   `;
 
   const input = document.getElementById('input-clienta');
+  const suggestionsEl = document.getElementById('clienta-suggestions');
   const btn = document.getElementById('btn-step1');
 
   const advance = () => {
@@ -147,10 +154,48 @@ function renderStep1(el) {
 
   btn.addEventListener('click', advance);
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') advance(); });
+
+  // Autocomplete
+  input.addEventListener('input', () => {
+    const query = input.value.trim().toLowerCase();
+    if (query.length < 2 || allClientas.length === 0) {
+      suggestionsEl.classList.add('hidden');
+      return;
+    }
+
+    const matches = allClientas
+      .filter((name) => name.toLowerCase().includes(query))
+      .slice(0, 5);
+
+    if (matches.length === 0) {
+      suggestionsEl.classList.add('hidden');
+      return;
+    }
+
+    suggestionsEl.innerHTML = matches.map((name) =>
+      `<button class="clienta-suggestion-item" type="button">${name}</button>`
+    ).join('');
+    suggestionsEl.classList.remove('hidden');
+  });
+
+  // Click on suggestion
+  suggestionsEl.addEventListener('click', (e) => {
+    const item = e.target.closest('.clienta-suggestion-item');
+    if (!item) return;
+    input.value = item.textContent;
+    cita.clienta = item.textContent;
+    suggestionsEl.classList.add('hidden');
+  });
+
+  // Hide suggestions on blur (delayed so click fires first)
+  input.addEventListener('blur', () => {
+    setTimeout(() => suggestionsEl.classList.add('hidden'), 200);
+  });
+
   input.focus();
 }
 
-// Paso 2: Servicios (multi-selecci\u00f3n)
+// Paso 2: Servicios (multi-selección)
 function renderStep2(el) {
   const servicios = session?.servicios || [];
 
@@ -207,7 +252,7 @@ function renderStep2(el) {
   });
 }
 
-// Paso 3: Productos (multi-selecci\u00f3n, puede omitir)
+// Paso 3: Productos (multi-selección, puede omitir)
 function renderStep3(el) {
   const productosDisp = session?.productos || [];
 
@@ -434,7 +479,7 @@ function renderStep5(el) {
   });
 }
 
-// Paso 6: M\u00e9todo de pago
+// Paso 6: Método de pago
 function renderStep6(el) {
   const metodos = [
     { id: 'Efectivo', emoji: '\ud83d\udcb5', label: 'Efectivo' },
@@ -465,7 +510,7 @@ function renderStep6(el) {
   });
 }
 
-// Paso 7: Confirmaci\u00f3n con desglose y comisiones
+// Paso 7: Confirmación con desglose y comisiones
 function renderStep7(el) {
   const total = cita.items.reduce((sum, it) => sum + it.costo, 0);
   const serviciosItems = cita.items.filter((it) => it.tipo === 'servicio');
