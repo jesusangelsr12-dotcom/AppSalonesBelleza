@@ -1,27 +1,35 @@
 /**
- * Pantalla Ver Registros de Hoy
- * Muestra citas y gastos del día con totales (ingresos vs gastos)
+ * Pantalla Ver Registros
+ * Muestra citas y gastos de cualquier día con totales (ingresos vs gastos)
  * Permite eliminar citas y gastos individuales
  */
 
 import { getCitas, getGastos, deleteCita, deleteGasto } from '../api.js';
-import { formatMXN, todayISO, todayFormatted, showToast, showLoader, hideLoader } from '../utils.js';
+import { formatMXN, todayISO, showToast, showLoader, hideLoader } from '../utils.js';
 import { navigateTo } from '../app.js';
 
 let session = null;
+let selectedDate = '';
+
+function formatDateDisplay(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+}
 
 export function render(s) {
   session = s;
+  selectedDate = todayISO();
   return `
     <div class="screen" id="registros-screen">
       <header class="screen-header">
         <button class="header-back" id="registros-back">\u2190 Atr\u00e1s</button>
-        <h2 class="screen-title">Registros de Hoy</h2>
+        <h2 class="screen-title">Registros</h2>
       </header>
 
-      <p style="color: var(--color-gray-500); font-size: 0.85rem; margin-bottom: 16px">
-        ${todayFormatted()}
-      </p>
+      <div class="date-picker-row">
+        <input type="date" class="date-picker-input" id="date-picker"
+          value="${selectedDate}" max="${todayISO()}">
+      </div>
 
       <div class="totals-bar" id="totals-bar">
         <div class="total-card">
@@ -59,7 +67,16 @@ export function render(s) {
 
 export function init(s) {
   session = s;
+  selectedDate = todayISO();
+
   document.getElementById('registros-back').addEventListener('click', () => navigateTo('home'));
+
+  // Date picker
+  const datePicker = document.getElementById('date-picker');
+  datePicker.addEventListener('change', () => {
+    selectedDate = datePicker.value;
+    loadRegistros();
+  });
 
   // Cerrar modal con backdrop o bot\u00f3n cancelar
   document.getElementById('delete-modal-backdrop').addEventListener('click', closeDeleteModal);
@@ -111,17 +128,15 @@ async function handleConfirmDelete() {
 async function loadRegistros() {
   try {
     showLoader();
-    const fecha = todayISO();
     const [citasRes, gastosRes] = await Promise.all([
-      getCitas(session.sheet_id, fecha),
-      getGastos(session.sheet_id, fecha),
+      getCitas(session.sheet_id, selectedDate),
+      getGastos(session.sheet_id, selectedDate),
     ]);
     hideLoader();
 
     const citas = citasRes.citas || [];
     const gastos = gastosRes.gastos || [];
 
-    // Calcular totales (ahora cada cita tiene .total en vez de .costo)
     const totalIngresos = citas.reduce((sum, c) => sum + c.total, 0);
     const totalGastos = gastos.reduce((sum, g) => sum + g.monto, 0);
 
@@ -143,7 +158,7 @@ async function loadRegistros() {
   }
 }
 
-/** Genera el subtítulo de una cita con desglose de items */
+/** Genera el subt\u00edtulo de una cita con desglose de items */
 function buildCitaSubtitle(c) {
   const items = c.items || [];
   if (items.length === 0) return `${c.metodo_pago} \u00b7 ${c.timestamp}`;
@@ -176,12 +191,14 @@ function buildItemsBreakdown(items) {
 
 function renderRegistros(citas, gastos) {
   const content = document.getElementById('registros-content');
+  const isToday = selectedDate === todayISO();
+  const emptyLabel = isToday ? 'No hay registros para hoy' : `No hay registros para el ${formatDateDisplay(selectedDate)}`;
 
   if (citas.length === 0 && gastos.length === 0) {
     content.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-emoji">\ud83d\udced</div>
-        <p class="empty-state-text">No hay registros para hoy</p>
+        <p class="empty-state-text">${emptyLabel}</p>
       </div>
     `;
     return;

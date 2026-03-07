@@ -1409,3 +1409,124 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 .summary-value--comision {
   color: var(--color-purple);
 }
+
+/* --- Home Daily Summary --- */
+.home-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: 16px 12px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.home-summary-loading {
+  color: var(--color-gray-400);
+  font-size: 0.85rem;
+}
+
+.home-summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  gap: 2px;
+}
+
+.home-summary-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-brown);
+}
+
+.home-summary-value--income {
+  color: var(--color-green);
+}
+
+.home-summary-value--expense {
+  color: var(--color-error);
+}
+
+.home-summary-label {
+  font-size: 0.72rem;
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.home-summary-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--color-gray-200);
+  margin: 0 4px;
+}
+
+/* --- Date Picker (Registros) --- */
+.date-picker-row {
+  margin-bottom: 16px;
+}
+
+.date-picker-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  color: var(--color-brown);
+  outline: none;
+  transition: border-color var(--transition);
+  -webkit-appearance: none;
+  appearance: none;
+  box-sizing: border-box;
+}
+
+.date-picker-input:focus {
+  border-color: var(--color-accent);
+}
+
+/* --- Client Autocomplete (Cita Step 1) --- */
+.clienta-input-wrapper {
+  position: relative;
+}
+
+.clienta-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-gray-300);
+  border-top: none;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  box-shadow: var(--shadow-md);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.clienta-suggestion-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-gray-200);
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  color: var(--color-brown);
+  cursor: pointer;
+}
+
+.clienta-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.clienta-suggestion-item:active {
+  background: var(--color-accent-bg);
+}

@@ -94,3 +94,8 @@ export function deleteGasto(sheetId, fecha, timestamp, descripcion) {
     body: { sheet_id: sheetId, fecha, timestamp, descripcion },
   });
 }
+
+/** Obtener nombres únicos de clientas */
+export function getClientas(sheetId) {
+  return fetchAPI(`clientas?sheet_id=${encodeURIComponent(sheetId)}`);
+}

@@ -1,20 +1,25 @@
 /**
  * Pantalla Home
- * Header con saludo + nombre del sal\u00f3n + acciones principales
+ * Header con saludo + nombre del salón + resumen del día + acciones principales
  */
 
 import { logout } from '../auth.js';
 import { navigateTo } from '../app.js';
+import { getCitas, getGastos } from '../api.js';
+import { todayISO, formatMXN } from '../utils.js';
+
+let session = null;
 
 function getGreeting() {
   const h = new Date().getHours();
-  if (h < 12) return 'Buenos d\u00edas';
+  if (h < 12) return 'Buenos días';
   if (h < 18) return 'Buenas tardes';
   return 'Buenas noches';
 }
 
-export function render(session) {
-  const nombre = session?.salon_nombre || 'Mi Sal\u00f3n';
+export function render(s) {
+  session = s;
+  const nombre = session?.salon_nombre || 'Mi Salón';
 
   return `
     <div class="screen">
@@ -22,6 +27,10 @@ export function render(session) {
         <p class="home-greeting">${getGreeting()}</p>
         <h1 class="home-salon-name">${nombre}</h1>
       </header>
+
+      <div class="home-summary" id="home-summary">
+        <span class="home-summary-loading">Cargando resumen...</span>
+      </div>
 
       <div class="home-actions">
         <button class="home-action-card" id="btn-cita">
@@ -56,8 +65,8 @@ export function render(session) {
             </svg>
           </div>
           <div class="home-action-text">
-            <span class="home-action-label">Ver Registros de Hoy</span>
-            <span class="home-action-desc">Ingresos y gastos del d\u00eda</span>
+            <span class="home-action-label">Ver Registros</span>
+            <span class="home-action-desc">Ingresos y gastos</span>
           </div>
         </button>
       </div>
@@ -69,18 +78,20 @@ export function render(session) {
               <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
           </div>
-          <span class="home-action-label">Configuraci\u00f3n</span>
+          <span class="home-action-label">Configuración</span>
         </button>
 
         <button class="btn-logout" id="btn-logout">
-          Cerrar sesi\u00f3n
+          Cerrar sesión
         </button>
       </div>
     </div>
   `;
 }
 
-export function init() {
+export function init(s) {
+  session = s;
+
   document.getElementById('btn-cita').addEventListener('click', () => navigateTo('cita'));
   document.getElementById('btn-gasto').addEventListener('click', () => navigateTo('gasto'));
   document.getElementById('btn-registros').addEventListener('click', () => navigateTo('registros'));
@@ -90,4 +101,47 @@ export function init() {
     logout();
     navigateTo('login');
   });
+
+  // Cargar resumen del día (non-blocking)
+  loadDailySummary();
+}
+
+async function loadDailySummary() {
+  const summaryEl = document.getElementById('home-summary');
+  if (!session?.sheet_id) {
+    summaryEl.style.display = 'none';
+    return;
+  }
+
+  try {
+    const fecha = todayISO();
+    const [citasRes, gastosRes] = await Promise.all([
+      getCitas(session.sheet_id, fecha),
+      getGastos(session.sheet_id, fecha),
+    ]);
+
+    const citas = citasRes.citas || [];
+    const gastos = gastosRes.gastos || [];
+    const totalIngresos = citas.reduce((sum, c) => sum + c.total, 0);
+    const totalGastos = gastos.reduce((sum, g) => sum + g.monto, 0);
+
+    summaryEl.innerHTML = `
+      <div class="home-summary-item">
+        <span class="home-summary-value home-summary-value--income">${formatMXN(totalIngresos)}</span>
+        <span class="home-summary-label">ingresos</span>
+      </div>
+      <div class="home-summary-divider"></div>
+      <div class="home-summary-item">
+        <span class="home-summary-value">${citas.length}</span>
+        <span class="home-summary-label">citas</span>
+      </div>
+      <div class="home-summary-divider"></div>
+      <div class="home-summary-item">
+        <span class="home-summary-value home-summary-value--expense">${formatMXN(totalGastos)}</span>
+        <span class="home-summary-label">gastos</span>
+      </div>
+    `;
+  } catch {
+    summaryEl.style.display = 'none';
+  }
 }
