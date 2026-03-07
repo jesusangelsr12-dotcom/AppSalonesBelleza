@@ -16,8 +16,19 @@ export function render() {
     <div class="screen screen-centered" id="login-screen">
       <div class="login-container">
         <div class="text-center mb-24">
-          <div class="login-logo">✂️</div>
-          <h1 class="mt-16">Iniciar sesión a mi Salón</h1>
+          <div class="login-brand">
+            <div class="login-brand-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6.5 6.5c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5c0 1.8-1 3.3-2.5 4l-2 1-2-1c-1.5-.7-2.5-2.2-2.5-4z" fill="currentColor" opacity="0.3"/>
+                <path d="M12 12l-5 8h10l-5-8z" fill="currentColor" opacity="0.2"/>
+                <circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <path d="M7 14c-2 1-3 3-3 5h16c0-2-1-4-3-5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                <path d="M9 3.5C9.5 2 10.5 1 12 1s2.5 1 3 2.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="login-brand-name">My Salon</span>
+          </div>
+          <p class="login-tagline">Tu sal\u00f3n, siempre en orden</p>
         </div>
 
         <p class="text-center mb-16" style="color: var(--color-gray-500); font-size: 0.9rem">

@@ -288,20 +288,20 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 }
 
 .keypad-key {
-  min-height: 60px;
+  min-height: 58px;
   font-family: var(--font-family);
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--color-brown);
   background: var(--color-surface);
-  border: none;
+  border: 1px solid var(--color-gray-200);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .keypad-key:active {
@@ -709,19 +709,37 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
    Login Screen
    ============================================ */
 
-.login-logo {
-  width: 80px;
-  height: 80px;
+/* --- Login Brand (My Salon logo) --- */
+.login-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.login-brand-icon {
+  width: 72px;
+  height: 72px;
   border-radius: var(--radius-xl);
-  background: var(--color-brown);
+  background: linear-gradient(145deg, var(--color-brown), var(--color-brown-light));
   color: var(--color-accent);
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
+  box-shadow: 0 8px 24px rgba(44, 24, 16, 0.2);
+}
+
+.login-brand-name {
+  font-size: 1.75rem;
   font-weight: 700;
-  letter-spacing: 2px;
-  box-shadow: var(--shadow-lg);
+  color: var(--color-brown);
+  letter-spacing: -0.5px;
+}
+
+.login-tagline {
+  font-size: 0.88rem;
+  color: var(--color-gray-500);
+  margin-top: 6px;
 }
 
 .login-container {
@@ -737,7 +755,15 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
    ============================================ */
 
 .home-header {
-  padding: 28px 0 20px;
+  padding: 32px 0 24px;
+}
+
+.home-greeting {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--color-accent);
+  margin-bottom: 2px;
+  letter-spacing: 0.3px;
 }
 
 .home-salon-name {
@@ -747,18 +773,12 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   letter-spacing: -0.4px;
 }
 
-.home-subtitle {
-  font-size: 0.9rem;
-  color: var(--color-gray-500);
-  margin-top: 4px;
-}
-
 .home-actions {
   display: flex;
   flex-direction: column;
   gap: 12px;
   flex: 1;
-  padding: 12px 0;
+  padding: 8px 0;
 }
 
 .home-action-card {
@@ -766,14 +786,16 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   align-items: center;
   gap: 16px;
   width: 100%;
-  padding: 22px 20px;
+  padding: 20px;
   background: var(--color-surface);
   border: none;
+  border-left: 4px solid transparent;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
   transition: all var(--transition);
   font-family: var(--font-family);
+  text-align: left;
 }
 
 .home-action-card:active {
@@ -783,31 +805,59 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 
 .home-action-card--sm {
   padding: 14px 20px;
+  border-left: none;
 }
 
-.home-action-emoji {
-  font-size: 1.6rem;
+/* --- Action Icon Circles --- */
+.home-action-icon {
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-gray-100);
   border-radius: var(--radius-md);
 }
 
-.home-action-card--sm .home-action-emoji {
-  font-size: 1.1rem;
+.home-action-icon--primary {
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+}
+
+.home-action-icon--warning {
+  background: #FDF0EF;
+  color: var(--color-error);
+}
+
+.home-action-icon--success {
+  background: var(--color-green-light);
+  color: var(--color-green);
+}
+
+.home-action-icon--muted {
+  background: var(--color-gray-200);
+  color: var(--color-gray-500);
   width: 36px;
   height: 36px;
   border-radius: var(--radius-sm);
 }
 
+.home-action-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .home-action-label {
-  font-size: 1.02rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--color-brown);
+}
+
+.home-action-desc {
+  font-size: 0.78rem;
+  color: var(--color-gray-500);
+  font-weight: 400;
 }
 
 .home-action-card--sm .home-action-label {
