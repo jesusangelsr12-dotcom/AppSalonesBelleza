@@ -10,10 +10,10 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
   2. Selección múltiple de servicios
   3. Selección múltiple de productos (opcional)
   4. Precio individual por cada servicio/producto
-  5. Asignar comisiones a trabajadoras (opcional, se salta si no hay trabajadoras configuradas)
+  5. Comisiones: elegir trabajadora y escribir el % de cada servicio/producto (opcional, se salta si no hay trabajadoras configuradas)
   6. Método de pago (Efectivo, Tarjeta, Transferencia)
   7. Confirmación con desglose, comisiones y total automático
-- **Comisiones** — Porcentajes predefinidos por trabajadora (diferenciado entre servicios y productos). Se registran en hoja separada "Comisiones" para fácil reporteo
+- **Comisiones** — Al registrar la cita eliges la trabajadora y escribes el % por cada servicio/producto; la app calcula el monto. Se registran en hoja separada "Comisiones" para fácil reporteo
 - **Registrar Gastos** — Registro de gastos operativos del salón
 - **Ver Registros del Día** — Resumen de ingresos vs gastos con desglose detallado
 - **Eliminar Registros** — Eliminar citas o gastos con confirmación
@@ -90,9 +90,12 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
 **Formato de trabajadoras:**
 ```json
 [
-  {"nombre": "Ana", "pct_servicio": 10, "pct_producto": 5}
+  {"nombre": "Ana"}
 ]
 ```
+El porcentaje de comisión ya no se guarda por trabajadora; se escribe por item
+al registrar cada cita. (Se siguen leyendo salones con el formato viejo
+`{"nombre":"Ana","pct_servicio":10,"pct_producto":5}` sin problema.)
 
 ### Hoja "Citas" (por salón)
 | Columna | Campo |

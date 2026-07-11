@@ -11,7 +11,7 @@ import { navigateTo } from '../app.js';
 let session = null;
 let servicios = [];
 let productos = [];
-let trabajadoras = []; // [{nombre, pct_servicio, pct_producto}]
+let trabajadoras = []; // [{nombre}]  (el % se pone al registrar cada cita)
 
 export function render(s) {
   session = s;
@@ -35,7 +35,11 @@ export function init(s) {
   session = s;
   servicios = [...(session?.servicios || [])];
   productos = [...(session?.productos || [])];
-  trabajadoras = (session?.trabajadoras || []).map((t) => ({ ...t }));
+  // Solo guardamos el nombre; el % se asigna al registrar cada cita.
+  // Soporta formato viejo ({nombre, pct_*}) o string.
+  trabajadoras = (session?.trabajadoras || []).map((t) => ({
+    nombre: typeof t === 'string' ? t : t.nombre,
+  }));
 
   document.getElementById('config-back').addEventListener('click', () => navigateTo('home'));
   renderConfig();
@@ -88,37 +92,23 @@ function renderConfig() {
 
       <!-- Secci\u00f3n Trabajadoras -->
       <label class="input-label mt-32">Trabajadoras con comisi\u00f3n</label>
+      <p class="multi-select-hint">El porcentaje se asigna al registrar cada cita.</p>
       <div id="trabajadoras-list" class="gap-12">
         ${trabajadoras.length === 0 ? `
           <p class="text-center" style="color: var(--color-gray-400); padding: 16px 0; font-size: 0.9rem">
             No hay trabajadoras registradas.
           </p>
         ` : trabajadoras.map((t, i) => `
-          <div class="config-worker-item">
-            <div class="config-worker-info">
-              <span class="config-worker-name">${t.nombre}</span>
-              <span class="config-worker-pcts">Serv: ${t.pct_servicio}% \u00b7 Prod: ${t.pct_producto}%</span>
-            </div>
+          <div class="config-service-item">
+            <span class="config-service-name">${t.nombre}</span>
             <button class="config-service-delete" data-type="trabajadora" data-index="${i}">\u2715</button>
           </div>
         `).join('')}
       </div>
-      <div class="config-worker-form mt-16">
-        <input type="text" class="input" id="input-worker-name"
-          placeholder="Nombre" autocomplete="off">
-        <div class="config-worker-pct-row mt-8">
-          <div class="config-worker-pct-field">
-            <label class="config-worker-pct-label">% Servicio</label>
-            <input type="number" class="input" id="input-worker-pct-serv"
-              placeholder="10" min="0" max="100" inputmode="numeric">
-          </div>
-          <div class="config-worker-pct-field">
-            <label class="config-worker-pct-label">% Producto</label>
-            <input type="number" class="input" id="input-worker-pct-prod"
-              placeholder="5" min="0" max="100" inputmode="numeric">
-          </div>
-          <button class="btn btn-gold config-add-btn" id="btn-add-worker">Agregar</button>
-        </div>
+      <div class="config-add-row mt-16">
+        <input type="text" class="input config-add-input" id="input-worker-name"
+          placeholder="Nombre de la trabajadora" autocomplete="off">
+        <button class="btn btn-gold config-add-btn" id="btn-add-worker">Agregar</button>
       </div>
 
       <button class="btn btn-primary mt-24" id="btn-save-config">Guardar Cambios</button>
@@ -167,20 +157,17 @@ function renderConfig() {
   btnAddProduct.addEventListener('click', addProduct);
   inputProduct.addEventListener('keydown', (e) => { if (e.key === 'Enter') addProduct(); });
 
-  // Agregar trabajadora
-  document.getElementById('btn-add-worker').addEventListener('click', () => {
-    const name = document.getElementById('input-worker-name').value.trim();
-    const pctServ = parseInt(document.getElementById('input-worker-pct-serv').value, 10);
-    const pctProd = parseInt(document.getElementById('input-worker-pct-prod').value, 10);
-
+  // Agregar trabajadora (solo nombre)
+  const inputWorker = document.getElementById('input-worker-name');
+  const addWorker = () => {
+    const name = inputWorker.value.trim();
     if (!name) { showToast('Ingresa el nombre', 'error'); return; }
-    if (isNaN(pctServ) || pctServ < 0 || pctServ > 100) { showToast('% servicio inv\u00e1lido (0-100)', 'error'); return; }
-    if (isNaN(pctProd) || pctProd < 0 || pctProd > 100) { showToast('% producto inv\u00e1lido (0-100)', 'error'); return; }
     if (trabajadoras.some((t) => t.nombre === name)) { showToast('Esa trabajadora ya existe', 'error'); return; }
-
-    trabajadoras.push({ nombre: name, pct_servicio: pctServ, pct_producto: pctProd });
+    trabajadoras.push({ nombre: name });
     renderConfig();
-  });
+  };
+  document.getElementById('btn-add-worker').addEventListener('click', addWorker);
+  inputWorker.addEventListener('keydown', (e) => { if (e.key === 'Enter') addWorker(); });
 
   // Guardar
   document.getElementById('btn-save-config').addEventListener('click', saveConfig);
