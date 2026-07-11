@@ -134,6 +134,34 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
 | D | monto |
 | E | metodo_pago |
 
+## Crear un nuevo salón
+
+La app **no** tiene una pantalla para dar de alta salones ni para asignar PINs
+(eso se hace directamente en Google Sheets). Para simplificarlo hay un script:
+
+```bash
+# Salón nuevo con catálogo vacío, sin PIN
+npm run crear-salon -- --nombre "Testing"
+
+# Salón con PIN listo para entrar
+npm run crear-salon -- --nombre "Testing" --pin 123456
+
+# Salón que copia servicios/productos/trabajadoras de un salón existente
+npm run crear-salon -- --nombre "Testing" --pin 123456 --plantilla salon_001
+
+# Además compartirlo con tu cuenta de Google para verlo en tu Drive
+npm run crear-salon -- --nombre "Testing" --pin 123456 --plantilla salon_001 --compartir tucorreo@gmail.com
+```
+
+El script:
+1. Crea un Google Sheet con las hojas `Config`, `Citas`, `Comisiones` y `Gastos` (con sus encabezados).
+2. Rellena `Config` con el nombre, el PIN (hasheado con SHA-256, igual que el frontend) y los catálogos.
+3. Lo registra en la hoja maestra (`Salones`) con el siguiente `salon_id` disponible.
+
+Requiere las mismas variables de entorno que la app (ver abajo). El PIN se puede
+cambiar después volviendo a correr el script o editando la celda `Config!C2`
+con el hash SHA-256 del nuevo PIN.
+
 ## Configuración
 
 ### Variables de Entorno
