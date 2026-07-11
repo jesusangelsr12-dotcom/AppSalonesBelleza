@@ -9,6 +9,7 @@ import * as homeView from './views/home.js';
 import * as citaView from './views/cita.js';
 import * as gastoView from './views/gasto.js';
 import * as registrosView from './views/registros.js';
+import * as comisionesView from './views/comisiones.js';
 import * as configView from './views/config.js';
 
 const routes = {
@@ -17,6 +18,7 @@ const routes = {
   cita: citaView,
   gasto: gastoView,
   registros: registrosView,
+  comisiones: comisionesView,
   config: configView,
 };
 

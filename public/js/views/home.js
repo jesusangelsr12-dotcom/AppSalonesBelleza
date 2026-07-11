@@ -69,6 +69,18 @@ export function render(s) {
             <span class="home-action-desc">Ingresos y gastos</span>
           </div>
         </button>
+
+        <button class="home-action-card" id="btn-comisiones">
+          <div class="home-action-icon home-action-icon--gold">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>
+            </svg>
+          </div>
+          <div class="home-action-text">
+            <span class="home-action-label">Comisiones</span>
+            <span class="home-action-desc">Reporte por trabajadora</span>
+          </div>
+        </button>
       </div>
 
       <div class="home-footer">
@@ -95,6 +107,7 @@ export function init(s) {
   document.getElementById('btn-cita').addEventListener('click', () => navigateTo('cita'));
   document.getElementById('btn-gasto').addEventListener('click', () => navigateTo('gasto'));
   document.getElementById('btn-registros').addEventListener('click', () => navigateTo('registros'));
+  document.getElementById('btn-comisiones').addEventListener('click', () => navigateTo('comisiones'));
   document.getElementById('btn-config').addEventListener('click', () => navigateTo('config'));
 
   document.getElementById('btn-logout').addEventListener('click', () => {

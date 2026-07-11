@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jr-salones-v7';
+const CACHE_NAME = 'jr-salones-v8';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -12,6 +12,7 @@ const STATIC_ASSETS = [
   '/js/views/cita.js',
   '/js/views/gasto.js',
   '/js/views/registros.js',
+  '/js/views/comisiones.js',
   '/js/views/config.js',
   '/manifest.json',
   '/icons/icon-192.png',
