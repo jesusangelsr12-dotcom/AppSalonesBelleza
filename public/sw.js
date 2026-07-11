@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jr-salones-v9';
+const CACHE_NAME = 'jr-salones-v10';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -16,7 +16,8 @@ const STATIC_ASSETS = [
   '/js/views/config.js',
   '/manifest.json',
   '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/icons/icon-512.png',
+  '/icons/apple-touch-icon.png'
 ];
 
 // Assets that should use network-first strategy (code & styles change often)
