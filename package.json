@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "vercel dev",
-    "build": "echo 'No build step needed'"
+    "build": "echo 'No build step needed'",
+    "crear-salon": "node scripts/crear-salon.js"
   },
   "dependencies": {
     "googleapis": "^144.0.0"

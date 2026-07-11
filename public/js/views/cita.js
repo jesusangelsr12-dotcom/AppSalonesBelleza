@@ -4,7 +4,7 @@
  * 2. Seleccionar servicios (multi-selección)
  * 3. Seleccionar productos (multi-selección, puede omitir)
  * 4. Poner precio a cada item seleccionado (uno por uno)
- * 5. Asignar comisiones a trabajadoras (opcional, se salta si no hay trabajadoras)
+ * 5. Comisiones: elegir trabajadora y escribir el % por item (opcional, se salta si no hay trabajadoras)
  * 6. Método de pago
  * 7. Confirmación con desglose, comisiones y total
  */
@@ -401,19 +401,20 @@ function renderStep4(el) {
   });
 }
 
-// Paso 5: Comisiones (asignar trabajadora a cada item)
+// Paso 5: Comisiones (elegir trabajadora y escribir el % de cada item)
 function renderStep5(el) {
   const trabajadoras = session?.trabajadoras || [];
+  // Nombre de la trabajadora, soportando formato viejo {nombre,...} o string
+  const nombreOf = (t) => (typeof t === 'string' ? t : t.nombre);
 
   el.innerHTML = `
     <div class="step-content">
       <label class="input-label">Comisiones (opcional)</label>
-      <p class="multi-select-hint">Asigna una trabajadora si aplica comisi\u00f3n</p>
+      <p class="multi-select-hint">Elige la trabajadora y escribe el % de cada uno</p>
 
       <div class="comision-items-list" id="comision-items-list">
         ${cita.items.map((item, i) => {
           const assigned = cita.comisionesMap[i];
-          const pctKey = item.tipo === 'servicio' ? 'pct_servicio' : 'pct_producto';
           return `
             <div class="comision-item-card">
               <div class="comision-item-header">
@@ -423,19 +424,24 @@ function renderStep5(el) {
               <div class="comision-item-badge comision-item-badge--${item.tipo}">
                 ${item.tipo === 'servicio' ? 'Servicio' : 'Producto'}
               </div>
-              <select class="comision-select" data-index="${i}">
-                <option value="">Sin comisi\u00f3n</option>
-                ${trabajadoras.map((t) => `
-                  <option value="${t.nombre}" ${assigned && assigned.trabajadora === t.nombre ? 'selected' : ''}>
-                    ${t.nombre} (${t[pctKey]}%)
-                  </option>
-                `).join('')}
-              </select>
-              ${assigned ? `
-                <div class="comision-preview">
-                  Comisi\u00f3n: ${formatMXN(assigned.comision)}
+              <div class="comision-assign-row">
+                <select class="comision-select" data-index="${i}">
+                  <option value="">Sin comisi\u00f3n</option>
+                  ${trabajadoras.map((t) => {
+                    const nombre = nombreOf(t);
+                    return `<option value="${nombre}" ${assigned && assigned.trabajadora === nombre ? 'selected' : ''}>${nombre}</option>`;
+                  }).join('')}
+                </select>
+                <div class="comision-pct-wrap">
+                  <input type="number" class="comision-pct-input" data-index="${i}"
+                    placeholder="0" min="0" max="100" inputmode="numeric"
+                    value="${assigned ? assigned.pct : ''}">
+                  <span class="comision-pct-symbol">%</span>
                 </div>
-              ` : ''}
+              </div>
+              <div class="comision-preview ${assigned ? '' : 'hidden'}" data-preview="${i}">
+                ${assigned ? `Comisi\u00f3n: ${formatMXN(assigned.comision)}` : ''}
+              </div>
             </div>
           `;
         }).join('')}
@@ -448,23 +454,33 @@ function renderStep5(el) {
     </div>
   `;
 
-  // Escuchar cambios en selects
-  el.querySelectorAll('.comision-select').forEach((select) => {
-    select.addEventListener('change', () => {
-      const idx = parseInt(select.dataset.index, 10);
-      const workerName = select.value;
+  // Recalcula la comisi\u00f3n de un item a partir de la trabajadora + % escrito.
+  // Actualiza solo el preview de ese item (sin re-render) para no perder el foco.
+  const recalc = (idx) => {
+    const selectEl = el.querySelector(`.comision-select[data-index="${idx}"]`);
+    const pctEl = el.querySelector(`.comision-pct-input[data-index="${idx}"]`);
+    const previewEl = el.querySelector(`[data-preview="${idx}"]`);
+    const worker = selectEl.value;
+    const pct = parseFloat(pctEl.value);
 
-      if (!workerName) {
-        delete cita.comisionesMap[idx];
-      } else {
-        const worker = trabajadoras.find((t) => t.nombre === workerName);
-        const item = cita.items[idx];
-        const pct = item.tipo === 'servicio' ? worker.pct_servicio : worker.pct_producto;
-        const comision = Math.round(item.costo * pct / 100 * 100) / 100;
-        cita.comisionesMap[idx] = { trabajadora: workerName, pct, comision };
-      }
-      renderStep5(el);
-    });
+    if (worker && pct > 0) {
+      const item = cita.items[idx];
+      const comision = Math.round(item.costo * pct / 100 * 100) / 100;
+      cita.comisionesMap[idx] = { trabajadora: worker, pct, comision };
+      previewEl.textContent = `Comisi\u00f3n: ${formatMXN(comision)}`;
+      previewEl.classList.remove('hidden');
+    } else {
+      delete cita.comisionesMap[idx];
+      previewEl.textContent = '';
+      previewEl.classList.add('hidden');
+    }
+  };
+
+  el.querySelectorAll('.comision-select').forEach((select) => {
+    select.addEventListener('change', () => recalc(parseInt(select.dataset.index, 10)));
+  });
+  el.querySelectorAll('.comision-pct-input').forEach((input) => {
+    input.addEventListener('input', () => recalc(parseInt(input.dataset.index, 10)));
   });
 
   document.getElementById('btn-skip-comisiones').addEventListener('click', () => {

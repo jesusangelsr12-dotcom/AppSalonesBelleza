@@ -99,3 +99,10 @@ export function deleteGasto(sheetId, fecha, timestamp, descripcion) {
 export function getClientas(sheetId) {
   return fetchAPI(`clientas?sheet_id=${encodeURIComponent(sheetId)}`);
 }
+
+/** Obtener comisiones registradas en un rango de fechas */
+export function getComisiones(sheetId, desde, hasta) {
+  return fetchAPI(
+    `comisiones?sheet_id=${encodeURIComponent(sheetId)}&desde=${desde}&hasta=${hasta}`
+  );
+}
