@@ -7,8 +7,8 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
 - **Autenticación por PIN** — Cada salón tiene su propio PIN de 6 dígitos con sesión de 8 horas
 - **Registrar Citas** — Flujo de hasta 7 pasos:
   1. Nombre de la clienta
-  2. Selección múltiple de servicios
-  3. Selección múltiple de productos (opcional)
+  2. Selección múltiple de servicios (opcional si solo llevó producto)
+  3. Selección múltiple de productos (opcional; debe haber al menos un servicio o producto)
   4. Precio individual por cada servicio/producto
   5. Comisiones: elegir trabajadora y escribir el % de cada servicio/producto (opcional, se salta si no hay trabajadoras configuradas)
   6. Método de pago (Efectivo, Tarjeta, Transferencia)

@@ -1,8 +1,9 @@
 /**
  * Flujo Registrar Cita (hasta 7 pasos)
  * 1. Nombre de clienta (con autocomplete)
- * 2. Seleccionar servicios (multi-selección)
+ * 2. Seleccionar servicios (multi-selección, puede omitir si solo llevó producto)
  * 3. Seleccionar productos (multi-selección, puede omitir)
+ *    — debe haber al menos un servicio o un producto en total
  * 4. Poner precio a cada item seleccionado (uno por uno)
  * 5. Comisiones: elegir trabajadora y escribir el % por item (opcional, se salta si no hay trabajadoras)
  * 6. Método de pago
@@ -95,6 +96,9 @@ function handleBack() {
       step = 4;
       pricingIndex = pricingItems.length - 1;
       currentCosto = String(pricingItems[pricingIndex].costo || '');
+    } else if (step === 3 && (session?.servicios || []).length === 0) {
+      // El paso 2 se salta solo cuando no hay catálogo de servicios
+      step = 1;
     } else {
       step--;
     }
@@ -200,6 +204,13 @@ function renderStep2(el) {
   const servicios = session?.servicios || [];
 
   if (servicios.length === 0) {
+    // Sin catálogo de servicios pero con productos: seguir directo a productos
+    if ((session?.productos || []).length > 0) {
+      cita.selectedServicios = [];
+      step = 3;
+      renderStep();
+      return;
+    }
     el.innerHTML = `
       <div class="step-content">
         <div class="empty-state">
@@ -216,7 +227,7 @@ function renderStep2(el) {
   el.innerHTML = `
     <div class="step-content">
       <label class="input-label">Selecciona los servicios</label>
-      <p class="multi-select-hint">Puedes elegir m\u00e1s de uno</p>
+      <p class="multi-select-hint">Puedes elegir m\u00e1s de uno, o saltar si solo llev\u00f3 producto</p>
       <div class="services-grid" id="services-grid">
         ${servicios.map((s) => `
           <button class="service-card ${cita.selectedServicios.includes(s) ? 'selected' : ''}" data-servicio="${s}">
@@ -225,10 +236,13 @@ function renderStep2(el) {
           </button>
         `).join('')}
       </div>
-      <button class="btn btn-primary mt-24" id="btn-step2"
-        ${cita.selectedServicios.length === 0 ? 'disabled style="opacity:0.5"' : ''}>
-        Siguiente (${cita.selectedServicios.length} seleccionado${cita.selectedServicios.length !== 1 ? 's' : ''})
-      </button>
+      <div class="step-actions mt-24">
+        <button class="btn btn-outline" id="btn-skip-services">Sin servicios</button>
+        <button class="btn btn-primary" id="btn-step2"
+          ${cita.selectedServicios.length === 0 ? 'disabled style="opacity:0.5"' : ''}>
+          Siguiente (${cita.selectedServicios.length})
+        </button>
+      </div>
     </div>
   `;
 
@@ -242,9 +256,20 @@ function renderStep2(el) {
     renderStep2(el);
   });
 
+  document.getElementById('btn-skip-services').addEventListener('click', () => {
+    const productosDisp = session?.productos || [];
+    if (productosDisp.length === 0) {
+      showToast('No hay productos configurados; selecciona al menos un servicio', 'error');
+      return;
+    }
+    cita.selectedServicios = [];
+    step = 3;
+    renderStep();
+  });
+
   document.getElementById('btn-step2').addEventListener('click', () => {
     if (cita.selectedServicios.length === 0) {
-      showToast('Selecciona al menos un servicio', 'error');
+      showToast('Selecciona al menos un servicio o toca "Sin servicios"', 'error');
       return;
     }
     step = 3;
@@ -297,6 +322,11 @@ function renderStep3(el) {
   });
 
   document.getElementById('btn-skip-products').addEventListener('click', () => {
+    // No permitir cita vacía: sin servicios Y sin productos
+    if (cita.selectedServicios.length === 0) {
+      showToast('Selecciona al menos un producto (no elegiste servicios)', 'error');
+      return;
+    }
     cita.selectedProductos = [];
     preparePricing();
     step = 4;
