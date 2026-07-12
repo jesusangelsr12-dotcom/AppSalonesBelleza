@@ -1,6 +1,6 @@
 /**
  * Flujo Registrar Cita (hasta 7 pasos)
- * 1. Nombre de clienta (con autocomplete)
+ * 1. Nombre de clienta (con autocomplete) + fecha de la cita (default: hoy, editable)
  * 2. Seleccionar servicios (multi-selección, puede omitir si solo llevó producto)
  * 3. Seleccionar productos (multi-selección, puede omitir)
  *    — debe haber al menos un servicio o un producto en total
@@ -21,6 +21,7 @@ let allClientas = [];
 // Estado de la cita
 let cita = {
   clienta: '',
+  fecha: '',               // YYYY-MM-DD (default: hoy, editable en paso 1)
   selectedServicios: [],
   selectedProductos: [],
   items: [],              // [{tipo, nombre, costo}]
@@ -32,6 +33,13 @@ let cita = {
 let pricingItems = [];
 let pricingIndex = 0;
 let currentCosto = '';
+
+/** Muestra una fecha YYYY-MM-DD como "12 de julio de 2026" */
+function formatFechaDisplay(fechaISO) {
+  if (!fechaISO) return '';
+  const d = new Date(fechaISO + 'T12:00:00');
+  return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+}
 
 // Número dinámico de pasos (7 si hay trabajadoras, 6 si no)
 function getTotalSteps() {
@@ -63,6 +71,7 @@ export function init(s) {
   step = 1;
   cita = {
     clienta: '',
+    fecha: todayISO(),
     selectedServicios: [],
     selectedProductos: [],
     items: [],
@@ -130,7 +139,7 @@ function renderStep() {
   }
 }
 
-// Paso 1: Nombre de clienta (con autocomplete)
+// Paso 1: Nombre de clienta (con autocomplete) + fecha de la cita
 function renderStep1(el) {
   el.innerHTML = `
     <div class="step-content">
@@ -140,18 +149,30 @@ function renderStep1(el) {
           value="${cita.clienta}" autocomplete="off">
         <div class="clienta-suggestions hidden" id="clienta-suggestions"></div>
       </div>
+
+      <label class="input-label mt-24">Fecha de la cita</label>
+      <input type="date" class="date-picker-input" id="input-fecha-cita"
+        value="${cita.fecha || todayISO()}">
+
       <button class="btn btn-primary mt-24" id="btn-step1">Siguiente</button>
     </div>
   `;
 
   const input = document.getElementById('input-clienta');
   const suggestionsEl = document.getElementById('clienta-suggestions');
+  const fechaInput = document.getElementById('input-fecha-cita');
   const btn = document.getElementById('btn-step1');
+
+  fechaInput.addEventListener('change', () => {
+    if (fechaInput.value) cita.fecha = fechaInput.value;
+  });
 
   const advance = () => {
     const val = input.value.trim();
     if (!val) { showToast('Ingresa el nombre de la clienta', 'error'); return; }
+    if (!fechaInput.value) { showToast('Selecciona la fecha de la cita', 'error'); return; }
     cita.clienta = val;
+    cita.fecha = fechaInput.value;
     step = 2;
     renderStep();
   };
@@ -572,6 +593,11 @@ function renderStep7(el) {
           <span class="summary-value">${cita.clienta}</span>
         </div>
 
+        <div class="summary-row">
+          <span class="summary-label">Fecha</span>
+          <span class="summary-value">${formatFechaDisplay(cita.fecha)}</span>
+        </div>
+
         ${serviciosItems.length > 0 ? `
           <div class="summary-section-title">Servicios</div>
           ${serviciosItems.map((it) => {
@@ -655,7 +681,7 @@ async function submitCita() {
     });
 
     await createCita(session.sheet_id, {
-      fecha: todayISO(),
+      fecha: cita.fecha || todayISO(),
       timestamp: nowTimestamp(),
       clienta: cita.clienta,
       items: cita.items,
