@@ -2,6 +2,35 @@
  * Utilidades compartidas
  */
 
+/**
+ * Escapa texto para poder inyectarlo en HTML sin romper el markup.
+ * Importante para las notas y los nombres, que son texto libre: un `<`, una
+ * comilla o un `</textarea>` dentro del texto rompería la página.
+ */
+export function escapeHTML(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Clave para identificar a una clienta (el nombre es texto libre).
+ * "María", "maria" y "MARIA " son la misma persona.
+ * OJO: duplicada en api/clientas.js (el back es CommonJS y el front ESM).
+ * Si cambia una, cambiar la otra.
+ */
+export function normalizeNombre(nombre) {
+  return String(nombre || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
 /** Hashea un PIN de 4 dígitos usando SHA-256 (Web Crypto API) */
 export async function hashPin(pin) {
   const encoder = new TextEncoder();

@@ -46,6 +46,18 @@ export function render(s) {
           </div>
         </button>
 
+        <button class="home-action-card" id="btn-historial">
+          <div class="home-action-icon home-action-icon--purple">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+          <div class="home-action-text">
+            <span class="home-action-label">Clientas</span>
+            <span class="home-action-desc">Historial y fórmulas</span>
+          </div>
+        </button>
+
         <button class="home-action-card" id="btn-gasto">
           <div class="home-action-icon home-action-icon--warning">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -105,6 +117,7 @@ export function init(s) {
   session = s;
 
   document.getElementById('btn-cita').addEventListener('click', () => navigateTo('cita'));
+  document.getElementById('btn-historial').addEventListener('click', () => navigateTo('historial'));
   document.getElementById('btn-gasto').addEventListener('click', () => navigateTo('gasto'));
   document.getElementById('btn-registros').addEventListener('click', () => navigateTo('registros'));
   document.getElementById('btn-comisiones').addEventListener('click', () => navigateTo('comisiones'));
