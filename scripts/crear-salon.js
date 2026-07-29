@@ -3,7 +3,7 @@
  * Crear un nuevo salón
  * ---------------------
  * Genera un Google Sheet con la estructura estándar de la app
- * (hojas: Config, Citas, Comisiones, Gastos), lo registra en la hoja
+ * (hojas: Config, Citas, Comisiones, Gastos, Clientas), lo registra en la hoja
  * maestra (MASTER_SHEET_ID → pestaña "Salones") y, opcionalmente, copia
  * el catálogo de servicios / productos / trabajadoras de un salón ya
  * existente para que el nuevo "traiga las mismas configuraciones".
@@ -162,6 +162,7 @@ async function main() {
         { properties: { title: 'Citas' } },
         { properties: { title: 'Comisiones' } },
         { properties: { title: 'Gastos' } },
+        { properties: { title: 'Clientas' } },
       ],
     },
   });
@@ -183,8 +184,8 @@ async function main() {
           ],
         },
         {
-          range: 'Citas!A1:F1',
-          values: [['fecha', 'timestamp', 'clienta', 'items', 'total', 'metodo_pago']],
+          range: 'Citas!A1:G1',
+          values: [['fecha', 'timestamp', 'clienta', 'items', 'total', 'metodo_pago', 'nota']],
         },
         {
           range: 'Comisiones!A1:I1',
@@ -193,6 +194,10 @@ async function main() {
         {
           range: 'Gastos!A1:E1',
           values: [['fecha', 'timestamp', 'descripcion', 'monto', 'metodo_pago']],
+        },
+        {
+          range: 'Clientas!A1:C1',
+          values: [['clienta', 'nota_fija', 'actualizado']],
         },
       ],
     },

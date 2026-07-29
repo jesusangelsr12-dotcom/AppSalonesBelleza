@@ -1,14 +1,20 @@
 /**
- * GET/POST/DELETE /api/citas
- * Lee citas de un día, registra o elimina una cita.
- * GET  ?sheet_id=xxx&fecha=2026-02-24 → { citas: [...] }
- * POST { sheet_id, fecha, timestamp, clienta, items, total, metodo_pago } → { success }
+ * GET/POST/PATCH/DELETE /api/citas
+ * Lee citas de un día, registra, edita la nota o elimina una cita.
+ * GET    ?sheet_id=xxx&fecha=2026-02-24 → { citas: [...] }
+ * POST   { sheet_id, fecha, timestamp, clienta, items, total, metodo_pago, nota?, comisiones? } → { success }
+ * PATCH  { sheet_id, fecha, timestamp, clienta, nota } → { success }
  * DELETE { sheet_id, fecha, timestamp, clienta } → { success }
  *
+ * Citas cols: A=fecha, B=timestamp, C=clienta, D=items(JSON), E=total, F=metodo_pago, G=nota
  * items es un JSON array: [{"tipo":"servicio","nombre":"Corte","costo":200}, ...]
+ *
+ * Nota: Sheets recorta las celdas vacías del final, así que las filas viejas
+ * (escritas cuando solo existían 6 columnas) llegan sin row[6]. Se lee siempre
+ * con fallback; nunca usar row.length para detectar el formato.
  */
 
-const { readSheet, appendSheet, deleteRow } = require('../lib/sheets');
+const { readSheet, appendSheet, updateSheet, deleteRow } = require('../lib/sheets');
 
 module.exports = async function handler(req, res) {
   try {
@@ -18,8 +24,8 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'Faltan parámetros' });
       }
 
-      const rows = await readSheet(sheet_id, 'Citas!A:F');
-      // Row 0 = headers: fecha, timestamp, clienta, items/servicio, total/costo, metodo_pago
+      const rows = await readSheet(sheet_id, 'Citas!A:G');
+      // Row 0 = headers: fecha, timestamp, clienta, items/servicio, total/costo, metodo_pago, nota
       const citas = rows.slice(1)
         .filter((row) => row[0] === fecha)
         .map((row) => {
@@ -42,6 +48,7 @@ module.exports = async function handler(req, res) {
             items,
             total,
             metodo_pago: row[5],
+            nota: row[6] || '',
           };
         });
 
@@ -49,14 +56,16 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { sheet_id, fecha, timestamp, clienta, items, total, metodo_pago, comisiones } = req.body;
+      const { sheet_id, fecha, timestamp, clienta, items, total, metodo_pago, nota, comisiones } = req.body;
 
+      // `nota` es opcional a propósito: los clientes viejos que quedaron
+      // cacheados no la mandan y deben seguir funcionando.
       if (!sheet_id || !fecha || !clienta || !items || total === undefined || !metodo_pago) {
         return res.status(400).json({ error: 'Faltan datos requeridos' });
       }
 
-      await appendSheet(sheet_id, 'Citas!A:F', [
-        [fecha, timestamp, clienta, JSON.stringify(items), String(total), metodo_pago],
+      await appendSheet(sheet_id, 'Citas!A:G', [
+        [fecha, timestamp, clienta, JSON.stringify(items), String(total), metodo_pago, nota || ''],
       ]);
 
       // Escribir comisiones en hoja separada si existen
@@ -79,6 +88,33 @@ module.exports = async function handler(req, res) {
       return res.status(201).json({ success: true });
     }
 
+    if (req.method === 'PATCH') {
+      const { sheet_id, fecha, timestamp, clienta, nota } = req.body;
+
+      if (!sheet_id || !fecha || !timestamp || !clienta) {
+        return res.status(400).json({ error: 'Faltan datos para identificar la cita' });
+      }
+      // Una nota vacía es válida: sirve para borrarla
+      if (typeof nota !== 'string') {
+        return res.status(400).json({ error: 'Nota inválida' });
+      }
+
+      const rows = await readSheet(sheet_id, 'Citas!A:G');
+      const rowIndex = rows.findIndex(
+        (row, i) => i > 0 && row[0] === fecha && row[1] === timestamp && row[2] === clienta
+      );
+
+      if (rowIndex === -1) {
+        return res.status(404).json({ error: 'Cita no encontrada' });
+      }
+
+      // rowIndex es 0-based e incluye la fila de encabezados en la posición 0,
+      // mientras que la notación A1 es 1-based → la fila real es rowIndex + 1.
+      // (deleteRow abajo NO lleva el +1 porque deleteDimension sí es 0-based.)
+      await updateSheet(sheet_id, `Citas!G${rowIndex + 1}`, [[nota]]);
+      return res.status(200).json({ success: true });
+    }
+
     if (req.method === 'DELETE') {
       const { sheet_id, fecha, timestamp, clienta } = req.body;
 
@@ -86,7 +122,7 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'Faltan datos para identificar la cita' });
       }
 
-      const rows = await readSheet(sheet_id, 'Citas!A:F');
+      const rows = await readSheet(sheet_id, 'Citas!A:G');
       const rowIndex = rows.findIndex(
         (row, i) => i > 0 && row[0] === fecha && row[1] === timestamp && row[2] === clienta
       );

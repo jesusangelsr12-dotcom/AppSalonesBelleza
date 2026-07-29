@@ -10,6 +10,7 @@
  * - productos   Multi-selección (solo si el salón tiene catálogo de productos)
  * - precios     Costo de cada item, uno por uno (con sub-navegación interna)
  * - comisiones  Trabajadora + % por item (solo si hay trabajadoras)
+ * - notas       Fórmula usada / notas de la visita (opcional)
  * - pago        Método de pago
  * - confirmar   Resumen con desglose, comisiones y total
  *
@@ -17,12 +18,13 @@
  */
 
 import { createCita, getClientas } from '../api.js';
-import { formatMXN, todayISO, nowTimestamp, showToast, showLoader, hideLoader } from '../utils.js';
+import { formatMXN, todayISO, nowTimestamp, showToast, showLoader, hideLoader, escapeHTML, normalizeNombre } from '../utils.js';
 import { navigateTo } from '../app.js';
 
 let session = null;
 let stepKey = 'clienta';
 let allClientas = [];
+let notasFijas = {};   // { claveNormalizada: nota } para avisar de alergias
 
 // Estado de la cita
 let cita = {
@@ -32,6 +34,7 @@ let cita = {
   selectedProductos: [],
   items: [],              // [{tipo, nombre, costo}]
   comisionesMap: {},       // { itemIndex: { trabajadora, pct, comision } }
+  nota: '',                // fórmula usada / notas de la visita
   metodo_pago: '',
 };
 
@@ -48,7 +51,7 @@ function formatFechaDisplay(fechaISO) {
 }
 
 // Secuencia completa de pasos, en orden.
-const STEPS = ['clienta', 'servicios', 'productos', 'precios', 'comisiones', 'pago', 'confirmar'];
+const STEPS = ['clienta', 'servicios', 'productos', 'precios', 'comisiones', 'notas', 'pago', 'confirmar'];
 
 /** Pasos que aplican a este salón, en orden. */
 function activeSteps() {
@@ -105,12 +108,14 @@ export function init(s) {
     selectedProductos: [],
     items: [],
     comisionesMap: {},
+    nota: '',
     metodo_pago: '',
   };
   pricingItems = [];
   pricingIndex = 0;
   currentCosto = '';
   allClientas = [];
+  notasFijas = {};
 
   document.getElementById('cita-back').addEventListener('click', goBack);
 
@@ -128,7 +133,10 @@ export function init(s) {
   // Cargar clientas para autocomplete (non-blocking)
   if (session?.sheet_id) {
     getClientas(session.sheet_id)
-      .then((res) => { allClientas = res.clientas || []; })
+      .then((res) => {
+        allClientas = res.clientas || [];
+        notasFijas = res.notas_fijas || {};
+      })
       .catch(() => { /* silencioso */ });
   }
 }
@@ -189,6 +197,7 @@ function renderStep() {
     case 'productos': renderStepProductos(container); break;
     case 'precios': renderStepPrecios(container); break;
     case 'comisiones': renderStepComisiones(container); break;
+    case 'notas': renderStepNotas(container); break;
     case 'pago': renderStepPago(container); break;
     case 'confirmar': renderStepConfirmar(container); break;
   }
@@ -201,7 +210,7 @@ function renderStepClienta(el) {
       <label class="input-label">Nombre de la clienta</label>
       <div class="clienta-input-wrapper">
         <input type="text" class="input" id="input-clienta" placeholder="Ej: Mar\u00eda L\u00f3pez"
-          value="${cita.clienta}" autocomplete="off">
+          value="${escapeHTML(cita.clienta)}" autocomplete="off">
         <div class="clienta-suggestions hidden" id="clienta-suggestions"></div>
       </div>
 
@@ -252,7 +261,7 @@ function renderStepClienta(el) {
     }
 
     suggestionsEl.innerHTML = matches.map((name) =>
-      `<button class="clienta-suggestion-item" type="button">${name}</button>`
+      `<button class="clienta-suggestion-item" type="button">${escapeHTML(name)}</button>`
     ).join('');
     suggestionsEl.classList.remove('hidden');
   });
@@ -556,6 +565,53 @@ function renderStepComisiones(el) {
   });
 }
 
+// Paso "notas": fórmula usada / notas de la visita (opcional)
+function renderStepNotas(el) {
+  // Si la clienta tiene nota fija (alergias, preferencias), este es el
+  // momento en que importa: se muestra antes de escribir la fórmula.
+  const notaFija = notasFijas[normalizeNombre(cita.clienta)] || '';
+
+  el.innerHTML = `
+    <div class="step-content">
+      ${notaFija ? `
+        <div class="nota-fija-banner">
+          <span class="nota-fija-banner-label">Nota de ${escapeHTML(cita.clienta)}</span>
+          <span class="nota-fija-banner-text">${escapeHTML(notaFija)}</span>
+        </div>
+      ` : ''}
+
+      <label class="input-label">Fórmula o notas (opcional)</label>
+      <p class="multi-select-hint">Lo que apuntes aquí lo verás en su historial la próxima visita</p>
+      <textarea class="input textarea" id="input-nota" rows="5" maxlength="500"
+        placeholder="Ej: Tinte 7.1 + 20 vol, 35 min">${escapeHTML(cita.nota)}</textarea>
+      <div class="char-counter" id="nota-counter">${cita.nota.length}/500</div>
+
+      <div class="step-actions mt-24">
+        <button class="btn btn-outline" id="btn-skip-notas">Sin notas</button>
+        <button class="btn btn-primary" id="btn-step-notas">Siguiente</button>
+      </div>
+    </div>
+  `;
+
+  const textarea = document.getElementById('input-nota');
+  const counter = document.getElementById('nota-counter');
+
+  textarea.addEventListener('input', () => {
+    cita.nota = textarea.value;
+    counter.textContent = `${textarea.value.length}/500`;
+  });
+
+  document.getElementById('btn-skip-notas').addEventListener('click', () => {
+    cita.nota = '';
+    goNext();
+  });
+
+  document.getElementById('btn-step-notas').addEventListener('click', () => {
+    cita.nota = textarea.value.trim();
+    goNext();
+  });
+}
+
 // Paso "pago": método de pago
 function renderStepPago(el) {
   const metodos = [
@@ -599,7 +655,7 @@ function renderStepConfirmar(el) {
       <div class="summary">
         <div class="summary-row">
           <span class="summary-label">Clienta</span>
-          <span class="summary-value">${cita.clienta}</span>
+          <span class="summary-value">${escapeHTML(cita.clienta)}</span>
         </div>
 
         <div class="summary-row">
@@ -663,6 +719,11 @@ function renderStepConfirmar(el) {
           <span class="summary-label">Pago</span>
           <span class="summary-value">${cita.metodo_pago}</span>
         </div>
+
+        ${cita.nota ? `
+          <div class="summary-section-title">Fórmula / Notas</div>
+          <div class="summary-nota">${escapeHTML(cita.nota)}</div>
+        ` : ''}
       </div>
       <button class="btn btn-primary mt-24" id="btn-confirmar">Confirmar y Registrar</button>
     </div>
@@ -696,6 +757,7 @@ async function submitCita() {
       items: cita.items,
       total,
       metodo_pago: cita.metodo_pago,
+      nota: cita.nota,
       comisiones,
     });
     hideLoader();

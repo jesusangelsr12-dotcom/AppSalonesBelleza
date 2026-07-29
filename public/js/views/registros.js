@@ -4,12 +4,13 @@
  * Permite eliminar citas y gastos individuales
  */
 
-import { getCitas, getGastos, deleteCita, deleteGasto } from '../api.js';
-import { formatMXN, todayISO, showToast, showLoader, hideLoader } from '../utils.js';
+import { getCitas, getGastos, deleteCita, deleteGasto, updateCitaNota } from '../api.js';
+import { formatMXN, todayISO, showToast, showLoader, hideLoader, escapeHTML } from '../utils.js';
 import { navigateTo } from '../app.js';
 
 let session = null;
 let selectedDate = '';
+let citasActuales = [];
 
 function formatDateDisplay(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
@@ -143,6 +144,7 @@ async function loadRegistros() {
     document.getElementById('total-ingresos').textContent = formatMXN(totalIngresos);
     document.getElementById('total-gastos').textContent = formatMXN(totalGastos);
 
+    citasActuales = citas;
     renderRegistros(citas, gastos);
   } catch (error) {
     hideLoader();
@@ -189,6 +191,59 @@ function buildItemsBreakdown(items) {
   `;
 }
 
+/** Fila de fórmula / nota dentro de la tarjeta de una cita, editable. */
+function buildNotaRow(c, index) {
+  return `
+    <div class="record-nota-row" data-nota-row="${index}">
+      ${c.nota
+        ? `<span class="visita-nota">${escapeHTML(c.nota)}</span>`
+        : '<span class="visita-nota visita-nota--vacia">Sin fórmula anotada</span>'}
+      <button class="btn-icon-sm" data-edit-nota="${index}" title="Editar nota">✎</button>
+    </div>
+  `;
+}
+
+/** Reemplaza la fila de la nota por un editor en línea. */
+function abrirEditorNota(index) {
+  const c = citasActuales[index];
+  const row = document.querySelector(`[data-nota-row="${index}"]`);
+  if (!c || !row) return;
+
+  row.innerHTML = `
+    <textarea class="input textarea nota-editor" rows="3" maxlength="500"
+      placeholder="Ej: Tinte 7.1 + 20 vol, 35 min">${escapeHTML(c.nota || '')}</textarea>
+    <div class="step-actions mt-8">
+      <button class="btn btn-outline btn-sm" data-cancel>Cancelar</button>
+      <button class="btn btn-primary btn-sm" data-save>Guardar</button>
+    </div>
+  `;
+
+  const textarea = row.querySelector('.nota-editor');
+  textarea.focus();
+
+  row.querySelector('[data-cancel]').addEventListener('click', () => loadRegistros());
+
+  row.querySelector('[data-save]').addEventListener('click', async () => {
+    const nota = textarea.value.trim();
+    try {
+      showLoader();
+      await updateCitaNota(session.sheet_id, {
+        fecha: c.fecha,
+        timestamp: c.timestamp,
+        clienta: c.clienta,
+        nota,
+      });
+      hideLoader();
+      c.nota = nota;
+      showToast('Nota guardada', 'success');
+      loadRegistros();
+    } catch (error) {
+      hideLoader();
+      showToast('No se pudo guardar la nota', 'error');
+    }
+  });
+}
+
 function renderRegistros(citas, gastos) {
   const content = document.getElementById('registros-content');
   const isToday = selectedDate === todayISO();
@@ -215,13 +270,14 @@ function renderRegistros(citas, gastos) {
           <div class="record-item record-item--expandable">
             <div class="record-main-row">
               <div class="record-info">
-                <div class="record-title">${c.clienta}</div>
+                <div class="record-title">${escapeHTML(c.clienta)}</div>
                 <div class="record-subtitle">${buildCitaSubtitle(c)}</div>
               </div>
               <div class="record-amount record-amount--income">${formatMXN(c.total)}</div>
               <button class="record-delete-btn" data-type="cita" data-index="${i}" title="Eliminar">\u00d7</button>
             </div>
             ${buildItemsBreakdown(c.items)}
+            ${buildNotaRow(c, i)}
           </div>
         `).join('')}
       </div>
@@ -237,7 +293,7 @@ function renderRegistros(citas, gastos) {
           <div class="record-item">
             <div class="record-main-row">
               <div class="record-info">
-                <div class="record-title">${g.descripcion}</div>
+                <div class="record-title">${escapeHTML(g.descripcion)}</div>
                 <div class="record-subtitle">${g.metodo_pago} \u00b7 ${g.timestamp}</div>
               </div>
               <div class="record-amount record-amount--expense">-${formatMXN(g.monto)}</div>
@@ -264,6 +320,13 @@ function renderRegistros(citas, gastos) {
         const g = gastos[index];
         openDeleteModal('gasto', g, g.descripcion);
       }
+    });
+  });
+
+  // Editar la fórmula / nota de una cita
+  content.querySelectorAll('[data-edit-nota]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      abrirEditorNota(parseInt(btn.dataset.editNota, 10));
     });
   });
 }

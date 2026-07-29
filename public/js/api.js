@@ -95,9 +95,30 @@ export function deleteGasto(sheetId, fecha, timestamp, descripcion) {
   });
 }
 
-/** Obtener nombres únicos de clientas */
+/** Obtener nombres únicos de clientas (+ sus notas fijas) */
 export function getClientas(sheetId) {
   return fetchAPI(`clientas?sheet_id=${encodeURIComponent(sheetId)}`);
+}
+
+/** Historial completo agrupado por clienta (una sola llamada) */
+export function getHistorial(sheetId) {
+  return fetchAPI(`clientas?sheet_id=${encodeURIComponent(sheetId)}&historial=1`);
+}
+
+/** Editar la nota / fórmula de una cita ya registrada */
+export function updateCitaNota(sheetId, { fecha, timestamp, clienta, nota }) {
+  return fetchAPI('citas', {
+    method: 'PATCH',
+    body: { sheet_id: sheetId, fecha, timestamp, clienta, nota },
+  });
+}
+
+/** Guardar la nota fija de una clienta (alergias, preferencias) */
+export function saveNotaFija(sheetId, clienta, notaFija) {
+  return fetchAPI('clientas', {
+    method: 'POST',
+    body: { sheet_id: sheetId, clienta, nota_fija: notaFija },
+  });
 }
 
 /** Obtener comisiones registradas en un rango de fechas */
