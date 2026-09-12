@@ -5,19 +5,20 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
 ## Funcionalidades
 
 - **Autenticación por PIN** — Cada salón tiene su propio PIN de 6 dígitos con sesión de 8 horas
-- **Registrar Citas** — Flujo de hasta 7 pasos:
-  1. Nombre de la clienta
-  2. Selección múltiple de servicios
-  3. Selección múltiple de productos (opcional)
+- **Registrar Citas** — Flujo de hasta 8 pasos (se ajustan solos al catálogo del salón):
+  1. Nombre de la clienta y fecha de la cita (default: hoy, editable)
+  2. Selección múltiple de servicios (opcional si solo llevó producto)
+  3. Selección múltiple de productos (opcional; debe haber al menos un servicio o producto)
   4. Precio individual por cada servicio/producto
-  5. Asignar comisiones a trabajadoras (opcional, se salta si no hay trabajadoras configuradas)
-  6. Método de pago (Efectivo, Tarjeta, Transferencia)
-  7. Confirmación con desglose, comisiones y total automático
-- **Comisiones** — Porcentajes predefinidos por trabajadora (diferenciado entre servicios y productos). Se registran en hoja separada "Comisiones" para fácil reporteo
+  5. Comisiones: elegir trabajadora y escribir el % de cada servicio/producto (opcional, se salta si no hay trabajadoras configuradas)
+  6. Fórmula o notas de la visita (opcional)
+  7. Método de pago (Efectivo, Tarjeta, Transferencia)
+  8. Confirmación con desglose, comisiones y total automático
+- **Comisiones** — Al registrar la cita eliges la trabajadora y escribes el % por cada servicio/producto; la app calcula el monto. Se registran en hoja separada "Comisiones" para fácil reporteo
 - **Registrar Gastos** — Registro de gastos operativos del salón
 - **Ver Registros del Día** — Resumen de ingresos vs gastos con desglose detallado
 - **Eliminar Registros** — Eliminar citas o gastos con confirmación
-- **Configuración** — Administrar catálogo de servicios, productos y trabajadoras con porcentajes de comisión
+- **Configuración** — Administrar catálogo de servicios, productos y trabajadoras
 - **PWA** — Instalable en celular, funciona offline para assets estáticos
 
 ## Tech Stack
@@ -35,7 +36,9 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
 
 ```
 ├── api/                    # Serverless functions (Vercel)
-│   ├── citas.js            # GET/POST/DELETE citas
+│   ├── citas.js            # GET/POST/PATCH/DELETE citas
+│   ├── clientas.js         # GET lista/historial, POST nota fija
+│   ├── comisiones.js       # GET comisiones por rango de fechas
 │   ├── config.js           # GET/POST configuración
 │   ├── gastos.js           # GET/POST/DELETE gastos
 │   ├── login.js            # POST autenticación por PIN
@@ -62,7 +65,11 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
 │           ├── cita.js     # Flujo registrar cita
 │           ├── gasto.js    # Flujo registrar gasto
 │           ├── registros.js # Ver registros del día
+│           ├── comisiones.js # Reporte de comisiones por trabajadora
+│           ├── historial.js # Buscador e historial de clientas
 │           └── config.js   # Configuración de servicios/productos
+├── scripts/
+│   └── crear-salon.js      # Alta de salones nuevos
 ├── package.json
 ├── vercel.json             # Configuración de Vercel
 └── .env.example            # Variables de entorno requeridas
@@ -90,9 +97,12 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
 **Formato de trabajadoras:**
 ```json
 [
-  {"nombre": "Ana", "pct_servicio": 10, "pct_producto": 5}
+  {"nombre": "Ana"}
 ]
 ```
+El porcentaje de comisión ya no se guarda por trabajadora; se escribe por item
+al registrar cada cita. (Se siguen leyendo salones con el formato viejo
+`{"nombre":"Ana","pct_servicio":10,"pct_producto":5}` sin problema.)
 
 ### Hoja "Citas" (por salón)
 | Columna | Campo |
@@ -103,6 +113,7 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
 | D | items (JSON array) |
 | E | total |
 | F | metodo_pago |
+| G | nota (fórmula usada / notas de la visita) |
 
 **Formato de items:**
 ```json
@@ -111,6 +122,16 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
   {"tipo": "producto", "nombre": "Shampoo", "costo": 150}
 ]
 ```
+
+### Hoja "Clientas" (por salón)
+| Columna | Campo |
+|---------|-------|
+| A | clienta |
+| B | nota_fija (alergias, preferencias) |
+| C | actualizado |
+
+En salones creados antes de que existiera esta hoja, la app la crea sola la
+primera vez que se guarda una nota fija. No hay que hacer nada manualmente.
 
 ### Hoja "Comisiones" (por salón)
 | Columna | Campo |
@@ -133,6 +154,34 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
 | C | descripcion |
 | D | monto |
 | E | metodo_pago |
+
+## Crear un nuevo salón
+
+La app **no** tiene una pantalla para dar de alta salones ni para asignar PINs
+(eso se hace directamente en Google Sheets). Para simplificarlo hay un script:
+
+```bash
+# Salón nuevo con catálogo vacío, sin PIN
+npm run crear-salon -- --nombre "Testing"
+
+# Salón con PIN listo para entrar
+npm run crear-salon -- --nombre "Testing" --pin 123456
+
+# Salón que copia servicios/productos/trabajadoras de un salón existente
+npm run crear-salon -- --nombre "Testing" --pin 123456 --plantilla salon_001
+
+# Además compartirlo con tu cuenta de Google para verlo en tu Drive
+npm run crear-salon -- --nombre "Testing" --pin 123456 --plantilla salon_001 --compartir tucorreo@gmail.com
+```
+
+El script:
+1. Crea un Google Sheet con las hojas `Config`, `Citas`, `Comisiones`, `Gastos` y `Clientas` (con sus encabezados).
+2. Rellena `Config` con el nombre, el PIN (hasheado con SHA-256, igual que el frontend) y los catálogos.
+3. Lo registra en la hoja maestra (`Salones`) con el siguiente `salon_id` disponible.
+
+Requiere las mismas variables de entorno que la app (ver abajo). El PIN se puede
+cambiar después volviendo a correr el script o editando la celda `Config!C2`
+con el hash SHA-256 del nuevo PIN.
 
 ## Configuración
 

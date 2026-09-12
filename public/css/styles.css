@@ -1393,6 +1393,60 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   color: var(--color-purple);
 }
 
+.comision-assign-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.comision-assign-row .comision-select {
+  flex: 1;
+}
+
+.comision-pct-wrap {
+  position: relative;
+  width: 92px;
+  flex-shrink: 0;
+}
+
+.comision-pct-input {
+  width: 100%;
+  height: 100%;
+  padding: 10px 26px 10px 12px;
+  font-family: var(--font-family);
+  font-size: 0.9rem;
+  color: var(--color-brown);
+  background: var(--color-gray-100);
+  border: 1.5px solid var(--color-gray-300);
+  border-radius: var(--radius-sm);
+  outline: none;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color var(--transition);
+}
+
+.comision-pct-input::-webkit-outer-spin-button,
+.comision-pct-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.comision-pct-input:focus {
+  border-color: var(--color-accent);
+}
+
+.comision-pct-symbol {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-gray-500);
+  pointer-events: none;
+}
+
 /* --- Summary comision tag --- */
 .summary-comision-tag {
   display: inline-block;
@@ -1529,4 +1583,394 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
 
 .clienta-suggestion-item:active {
   background: var(--color-accent-bg);
+}
+
+/* --- Reporte de Comisiones --- */
+.home-action-icon--gold {
+  background: #FBF0DF;
+  color: #B8860B;
+}
+
+.totals-bar--single {
+  grid-template-columns: 1fr;
+}
+
+.range-picker-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.range-picker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.range-picker-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.comision-report-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: box-shadow var(--transition);
+}
+
+.comision-report-card.expanded {
+  box-shadow: 0 2px 10px rgba(44, 24, 16, 0.08);
+}
+
+.comision-report-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.comision-report-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.comision-report-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.comision-report-meta {
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+  margin-top: 3px;
+}
+
+.comision-report-total {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--color-green);
+  white-space: nowrap;
+}
+
+.comision-report-detail {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-gray-200);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comision-report-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.comision-report-line-name {
+  font-size: 0.85rem;
+  color: var(--color-brown);
+  display: flex;
+  flex-direction: column;
+}
+
+.comision-report-line-sub {
+  font-size: 0.72rem;
+  color: var(--color-gray-500);
+  margin-top: 2px;
+}
+
+.comision-report-line-amount {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-green);
+  white-space: nowrap;
+}
+
+/* --- Textarea (notas / fórmulas) --- */
+/* Debe ir después de .input: misma especificidad, gana el orden. */
+.textarea {
+  min-height: 120px;
+  line-height: 1.5;
+  resize: vertical;
+  box-sizing: border-box;
+  /* font-size hereda 1rem de .input: por debajo de 16px iOS hace zoom al enfocar */
+}
+
+.char-counter {
+  margin-top: 6px;
+  text-align: right;
+  font-size: 0.72rem;
+  color: var(--color-gray-400);
+}
+
+/* --- Banner de nota fija de la clienta --- */
+.nota-fija-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  background: var(--color-accent-bg);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+}
+
+.nota-fija-banner-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nota-fija-banner-text {
+  font-size: 0.9rem;
+  color: var(--color-brown);
+  line-height: 1.45;
+}
+
+/* --- Nota en el resumen de confirmación --- */
+.summary-nota {
+  padding: 10px 12px;
+  background: var(--color-gray-100);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--color-brown);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* --- Historial de Clientas --- */
+.home-action-icon--purple {
+  background: var(--color-purple-light);
+  color: var(--color-purple);
+}
+
+#historial-search {
+  margin-bottom: 8px;
+}
+
+.historial-hint {
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+  margin: 12px 0;
+}
+
+.historial-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.clienta-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow var(--transition);
+}
+
+.clienta-card.expanded {
+  box-shadow: 0 2px 10px rgba(44, 24, 16, 0.08);
+}
+
+.clienta-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  cursor: pointer;
+}
+
+.clienta-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.clienta-card-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.clienta-pill {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--color-accent);
+  background: var(--color-accent-bg);
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+}
+
+.clienta-card-meta {
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+  margin-top: 3px;
+}
+
+/* Fórmula más reciente, visible sin abrir la tarjeta */
+.clienta-card-formula {
+  margin-top: 8px;
+  padding: 7px 10px;
+  background: var(--color-gray-100);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--color-brown-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.clienta-card-total {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-green);
+  white-space: nowrap;
+}
+
+.clienta-detail {
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--color-gray-200);
+  padding-top: 14px;
+}
+
+.nota-fija-block {
+  margin-bottom: 16px;
+}
+
+.nota-fija-block .nota-fija-banner {
+  margin-bottom: 8px;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-family);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.visitas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.visita-row {
+  padding: 12px;
+  background: var(--color-gray-100);
+  border-radius: var(--radius-sm);
+}
+
+.visita-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.visita-fecha {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-brown);
+}
+
+.visita-total {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-green);
+  white-space: nowrap;
+}
+
+.visita-items {
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+  margin-top: 3px;
+}
+
+.visita-nota-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.visita-nota {
+  flex: 1;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--color-brown);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.visita-nota--vacia {
+  color: var(--color-gray-400);
+  font-style: italic;
+}
+
+.btn-icon-sm {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  color: var(--color-gray-500);
+  background: var(--color-surface);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-icon-sm:active {
+  background: var(--color-gray-200);
+  transform: scale(0.94);
+}
+
+.btn-sm {
+  min-height: 42px;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+}
+
+.nota-editor {
+  margin-top: 8px;
+  min-height: 80px;
+}
+
+/* --- Nota de la cita en Ver Registros --- */
+.record-nota-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-gray-200);
 }

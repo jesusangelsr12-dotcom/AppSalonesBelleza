@@ -1,29 +1,40 @@
 /**
- * Flujo Registrar Cita (hasta 7 pasos)
- * 1. Nombre de clienta (con autocomplete)
- * 2. Seleccionar servicios (multi-selección)
- * 3. Seleccionar productos (multi-selección, puede omitir)
- * 4. Poner precio a cada item seleccionado (uno por uno)
- * 5. Asignar comisiones a trabajadoras (opcional, se salta si no hay trabajadoras)
- * 6. Método de pago
- * 7. Confirmación con desglose, comisiones y total
+ * Flujo Registrar Cita
+ *
+ * Los pasos NO son números fijos: se arman dinámicamente según el salón
+ * (ver STEPS y activeSteps). Un salón sin productos, por ejemplo, nunca ve
+ * ese paso. Así se evitan los saltos especiales que había antes.
+ *
+ * - clienta     Nombre (con autocomplete) + fecha de la cita (default: hoy)
+ * - servicios   Multi-selección (solo si el salón tiene catálogo de servicios)
+ * - productos   Multi-selección (solo si el salón tiene catálogo de productos)
+ * - precios     Costo de cada item, uno por uno (con sub-navegación interna)
+ * - comisiones  Trabajadora + % por item (solo si hay trabajadoras)
+ * - notas       Fórmula usada / notas de la visita (opcional)
+ * - pago        Método de pago
+ * - confirmar   Resumen con desglose, comisiones y total
+ *
+ * Debe haber al menos un servicio o un producto seleccionado en total.
  */
 
 import { createCita, getClientas } from '../api.js';
-import { formatMXN, todayISO, nowTimestamp, showToast, showLoader, hideLoader } from '../utils.js';
+import { formatMXN, todayISO, nowTimestamp, showToast, showLoader, hideLoader, escapeHTML, normalizeNombre } from '../utils.js';
 import { navigateTo } from '../app.js';
 
 let session = null;
-let step = 1;
+let stepKey = 'clienta';
 let allClientas = [];
+let notasFijas = {};   // { claveNormalizada: nota } para avisar de alergias
 
 // Estado de la cita
 let cita = {
   clienta: '',
+  fecha: '',               // YYYY-MM-DD (default: hoy, editable en paso 1)
   selectedServicios: [],
   selectedProductos: [],
   items: [],              // [{tipo, nombre, costo}]
   comisionesMap: {},       // { itemIndex: { trabajadora, pct, comision } }
+  nota: '',                // fórmula usada / notas de la visita
   metodo_pago: '',
 };
 
@@ -32,15 +43,45 @@ let pricingItems = [];
 let pricingIndex = 0;
 let currentCosto = '';
 
-// Número dinámico de pasos (7 si hay trabajadoras, 6 si no)
-function getTotalSteps() {
-  const trabajadoras = session?.trabajadoras || [];
-  return trabajadoras.length > 0 ? 7 : 6;
+/** Muestra una fecha YYYY-MM-DD como "12 de julio de 2026" */
+function formatFechaDisplay(fechaISO) {
+  if (!fechaISO) return '';
+  const d = new Date(fechaISO + 'T12:00:00');
+  return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+// Secuencia completa de pasos, en orden.
+const STEPS = ['clienta', 'servicios', 'productos', 'precios', 'comisiones', 'notas', 'pago', 'confirmar'];
+
+/** Pasos que aplican a este salón, en orden. */
+function activeSteps() {
+  return STEPS.filter((k) => {
+    if (k === 'servicios') return (session?.servicios || []).length > 0;
+    if (k === 'productos') return (session?.productos || []).length > 0;
+    if (k === 'comisiones') return (session?.trabajadoras || []).length > 0;
+    return true;
+  });
+}
+
+/** Va a un paso concreto y lo dibuja. */
+function goTo(key) {
+  stepKey = key;
+  renderStep();
+}
+
+/** Avanza al siguiente paso activo. */
+function goNext() {
+  const steps = activeSteps();
+  const next = steps[steps.indexOf(stepKey) + 1];
+  if (!next) return;
+  // Al entrar a precios desde atrás, armar la lista de items a cotizar
+  if (next === 'precios') preparePricing();
+  goTo(next);
 }
 
 export function render(s) {
   session = s;
-  const totalSteps = getTotalSteps();
+  const totalSteps = activeSteps().length;
   return `
     <div class="screen" id="cita-screen">
       <header class="screen-header">
@@ -59,55 +100,90 @@ export function render(s) {
 
 export function init(s) {
   session = s;
-  step = 1;
+  stepKey = 'clienta';
   cita = {
     clienta: '',
+    fecha: todayISO(),
     selectedServicios: [],
     selectedProductos: [],
     items: [],
     comisionesMap: {},
+    nota: '',
     metodo_pago: '',
   };
   pricingItems = [];
   pricingIndex = 0;
   currentCosto = '';
   allClientas = [];
+  notasFijas = {};
 
-  document.getElementById('cita-back').addEventListener('click', handleBack);
+  document.getElementById('cita-back').addEventListener('click', goBack);
+
+  // Sin catálogo de servicios NI de productos no hay nada que registrar:
+  // los pasos de selección no existirían y se llegaría a precios sin items.
+  const sinCatalogo = (session?.servicios || []).length === 0
+    && (session?.productos || []).length === 0;
+  if (sinCatalogo) {
+    renderSinCatalogo(document.getElementById('cita-step-content'));
+    return;
+  }
+
   renderStep();
 
   // Cargar clientas para autocomplete (non-blocking)
   if (session?.sheet_id) {
     getClientas(session.sheet_id)
-      .then((res) => { allClientas = res.clientas || []; })
+      .then((res) => {
+        allClientas = res.clientas || [];
+        notasFijas = res.notas_fijas || {};
+      })
       .catch(() => { /* silencioso */ });
   }
 }
 
-function handleBack() {
-  if (step === 4 && pricingIndex > 0) {
+function renderSinCatalogo(el) {
+  el.innerHTML = `
+    <div class="step-content">
+      <div class="empty-state">
+        <div class="empty-state-emoji">⚙️</div>
+        <p class="empty-state-text">No hay servicios ni productos configurados</p>
+        <button class="btn btn-outline mt-16" id="btn-go-config">Ir a Configuración</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('btn-go-config').addEventListener('click', () => navigateTo('config'));
+}
+
+/** Retrocede: primero dentro del sub-paso de precios, luego entre pasos. */
+function goBack() {
+  // El paso de precios cotiza item por item: retroceder ahí es interno
+  if (stepKey === 'precios' && pricingIndex > 0) {
     pricingIndex--;
     currentCosto = String(pricingItems[pricingIndex].costo || '');
     renderStep();
-  } else if (step > 1) {
-    // Si estamos en paso de pago y no hay trabajadoras, volver a pricing (no a comisiones)
-    if (step === 6 && getTotalSteps() === 6) {
-      step = 4;
-      pricingIndex = pricingItems.length - 1;
-      currentCosto = String(pricingItems[pricingIndex].costo || '');
-    } else {
-      step--;
-    }
-    renderStep();
-  } else {
-    navigateTo('home');
+    return;
   }
+
+  const steps = activeSteps();
+  const prev = steps[steps.indexOf(stepKey) - 1];
+  if (!prev) {
+    navigateTo('home');
+    return;
+  }
+
+  // Al volver a precios, reanudar en el último item ya cotizado
+  if (prev === 'precios' && pricingItems.length > 0) {
+    pricingIndex = pricingItems.length - 1;
+    currentCosto = String(pricingItems[pricingIndex].costo || '');
+  }
+  goTo(prev);
 }
 
 function updateStepIndicator() {
+  const activeIndex = activeSteps().indexOf(stepKey);
   const dots = document.querySelectorAll('#step-indicator .step-dot');
   dots.forEach((dot, i) => {
-    dot.classList.toggle('active', i < step);
+    dot.classList.toggle('active', i <= activeIndex);
   });
 }
 
@@ -115,41 +191,53 @@ function renderStep() {
   updateStepIndicator();
   const container = document.getElementById('cita-step-content');
 
-  switch (step) {
-    case 1: renderStep1(container); break;
-    case 2: renderStep2(container); break;
-    case 3: renderStep3(container); break;
-    case 4: renderStep4(container); break;
-    case 5: renderStep5(container); break;
-    case 6: renderStep6(container); break;
-    case 7: renderStep7(container); break;
+  switch (stepKey) {
+    case 'clienta': renderStepClienta(container); break;
+    case 'servicios': renderStepServicios(container); break;
+    case 'productos': renderStepProductos(container); break;
+    case 'precios': renderStepPrecios(container); break;
+    case 'comisiones': renderStepComisiones(container); break;
+    case 'notas': renderStepNotas(container); break;
+    case 'pago': renderStepPago(container); break;
+    case 'confirmar': renderStepConfirmar(container); break;
   }
 }
 
-// Paso 1: Nombre de clienta (con autocomplete)
-function renderStep1(el) {
+// Paso "clienta": nombre (con autocomplete) + fecha de la cita
+function renderStepClienta(el) {
   el.innerHTML = `
     <div class="step-content">
       <label class="input-label">Nombre de la clienta</label>
       <div class="clienta-input-wrapper">
         <input type="text" class="input" id="input-clienta" placeholder="Ej: Mar\u00eda L\u00f3pez"
-          value="${cita.clienta}" autocomplete="off">
+          value="${escapeHTML(cita.clienta)}" autocomplete="off">
         <div class="clienta-suggestions hidden" id="clienta-suggestions"></div>
       </div>
+
+      <label class="input-label mt-24">Fecha de la cita</label>
+      <input type="date" class="date-picker-input" id="input-fecha-cita"
+        value="${cita.fecha || todayISO()}">
+
       <button class="btn btn-primary mt-24" id="btn-step1">Siguiente</button>
     </div>
   `;
 
   const input = document.getElementById('input-clienta');
   const suggestionsEl = document.getElementById('clienta-suggestions');
+  const fechaInput = document.getElementById('input-fecha-cita');
   const btn = document.getElementById('btn-step1');
+
+  fechaInput.addEventListener('change', () => {
+    if (fechaInput.value) cita.fecha = fechaInput.value;
+  });
 
   const advance = () => {
     const val = input.value.trim();
     if (!val) { showToast('Ingresa el nombre de la clienta', 'error'); return; }
+    if (!fechaInput.value) { showToast('Selecciona la fecha de la cita', 'error'); return; }
     cita.clienta = val;
-    step = 2;
-    renderStep();
+    cita.fecha = fechaInput.value;
+    goNext();
   };
 
   btn.addEventListener('click', advance);
@@ -173,7 +261,7 @@ function renderStep1(el) {
     }
 
     suggestionsEl.innerHTML = matches.map((name) =>
-      `<button class="clienta-suggestion-item" type="button">${name}</button>`
+      `<button class="clienta-suggestion-item" type="button">${escapeHTML(name)}</button>`
     ).join('');
     suggestionsEl.classList.remove('hidden');
   });
@@ -195,28 +283,14 @@ function renderStep1(el) {
   input.focus();
 }
 
-// Paso 2: Servicios (multi-selección)
-function renderStep2(el) {
+// Paso "servicios": multi-selección (este paso solo existe si hay catálogo)
+function renderStepServicios(el) {
   const servicios = session?.servicios || [];
-
-  if (servicios.length === 0) {
-    el.innerHTML = `
-      <div class="step-content">
-        <div class="empty-state">
-          <div class="empty-state-emoji">\u2699\ufe0f</div>
-          <p class="empty-state-text">No hay servicios configurados</p>
-          <button class="btn btn-outline mt-16" id="btn-go-config">Ir a Configuraci\u00f3n</button>
-        </div>
-      </div>
-    `;
-    document.getElementById('btn-go-config').addEventListener('click', () => navigateTo('config'));
-    return;
-  }
 
   el.innerHTML = `
     <div class="step-content">
       <label class="input-label">Selecciona los servicios</label>
-      <p class="multi-select-hint">Puedes elegir m\u00e1s de uno</p>
+      <p class="multi-select-hint">Puedes elegir m\u00e1s de uno, o saltar si solo llev\u00f3 producto</p>
       <div class="services-grid" id="services-grid">
         ${servicios.map((s) => `
           <button class="service-card ${cita.selectedServicios.includes(s) ? 'selected' : ''}" data-servicio="${s}">
@@ -225,10 +299,13 @@ function renderStep2(el) {
           </button>
         `).join('')}
       </div>
-      <button class="btn btn-primary mt-24" id="btn-step2"
-        ${cita.selectedServicios.length === 0 ? 'disabled style="opacity:0.5"' : ''}>
-        Siguiente (${cita.selectedServicios.length} seleccionado${cita.selectedServicios.length !== 1 ? 's' : ''})
-      </button>
+      <div class="step-actions mt-24">
+        <button class="btn btn-outline" id="btn-skip-services">Sin servicios</button>
+        <button class="btn btn-primary" id="btn-step2"
+          ${cita.selectedServicios.length === 0 ? 'disabled style="opacity:0.5"' : ''}>
+          Siguiente (${cita.selectedServicios.length})
+        </button>
+      </div>
     </div>
   `;
 
@@ -239,30 +316,31 @@ function renderStep2(el) {
     const idx = cita.selectedServicios.indexOf(name);
     if (idx >= 0) cita.selectedServicios.splice(idx, 1);
     else cita.selectedServicios.push(name);
-    renderStep2(el);
+    renderStepServicios(el);
+  });
+
+  document.getElementById('btn-skip-services').addEventListener('click', () => {
+    const productosDisp = session?.productos || [];
+    if (productosDisp.length === 0) {
+      showToast('No hay productos configurados; selecciona al menos un servicio', 'error');
+      return;
+    }
+    cita.selectedServicios = [];
+    goNext();
   });
 
   document.getElementById('btn-step2').addEventListener('click', () => {
     if (cita.selectedServicios.length === 0) {
-      showToast('Selecciona al menos un servicio', 'error');
+      showToast('Selecciona al menos un servicio o toca "Sin servicios"', 'error');
       return;
     }
-    step = 3;
-    renderStep();
+    goNext();
   });
 }
 
-// Paso 3: Productos (multi-selección, puede omitir)
-function renderStep3(el) {
+// Paso "productos": multi-selección (este paso solo existe si hay catálogo)
+function renderStepProductos(el) {
   const productosDisp = session?.productos || [];
-
-  if (productosDisp.length === 0) {
-    cita.selectedProductos = [];
-    preparePricing();
-    step = 4;
-    renderStep();
-    return;
-  }
 
   el.innerHTML = `
     <div class="step-content">
@@ -293,14 +371,17 @@ function renderStep3(el) {
     const idx = cita.selectedProductos.indexOf(name);
     if (idx >= 0) cita.selectedProductos.splice(idx, 1);
     else cita.selectedProductos.push(name);
-    renderStep3(el);
+    renderStepProductos(el);
   });
 
   document.getElementById('btn-skip-products').addEventListener('click', () => {
+    // No permitir cita vacía: sin servicios Y sin productos
+    if (cita.selectedServicios.length === 0) {
+      showToast('Selecciona al menos un producto (no elegiste servicios)', 'error');
+      return;
+    }
     cita.selectedProductos = [];
-    preparePricing();
-    step = 4;
-    renderStep();
+    goNext();
   });
 
   document.getElementById('btn-step3').addEventListener('click', () => {
@@ -308,9 +389,7 @@ function renderStep3(el) {
       showToast('Selecciona al menos un producto o toca "Sin productos"', 'error');
       return;
     }
-    preparePricing();
-    step = 4;
-    renderStep();
+    goNext();
   });
 }
 
@@ -323,8 +402,8 @@ function preparePricing() {
   currentCosto = '';
 }
 
-// Paso 4: Precio de cada item (uno por uno)
-function renderStep4(el) {
+// Paso "precios": costo de cada item, uno por uno
+function renderStepPrecios(el) {
   const item = pricingItems[pricingIndex];
   const totalItems = pricingItems.length;
   const tipoLabel = item.tipo === 'servicio' ? 'Servicio' : 'Producto';
@@ -382,14 +461,7 @@ function renderStep4(el) {
           nombre: it.nombre,
           costo: parseFloat(it.costo),
         }));
-        // Ir a comisiones o pago
-        const trabajadoras = session?.trabajadoras || [];
-        if (trabajadoras.length > 0) {
-          step = 5;
-        } else {
-          step = 6; // saltar comisiones, ir directo a pago
-        }
-        renderStep();
+        goNext();
       }
       return;
     } else {
@@ -401,19 +473,20 @@ function renderStep4(el) {
   });
 }
 
-// Paso 5: Comisiones (asignar trabajadora a cada item)
-function renderStep5(el) {
+// Paso "comisiones": elegir trabajadora y escribir el % de cada item
+function renderStepComisiones(el) {
   const trabajadoras = session?.trabajadoras || [];
+  // Nombre de la trabajadora, soportando formato viejo {nombre,...} o string
+  const nombreOf = (t) => (typeof t === 'string' ? t : t.nombre);
 
   el.innerHTML = `
     <div class="step-content">
       <label class="input-label">Comisiones (opcional)</label>
-      <p class="multi-select-hint">Asigna una trabajadora si aplica comisi\u00f3n</p>
+      <p class="multi-select-hint">Elige la trabajadora y escribe el % de cada uno</p>
 
       <div class="comision-items-list" id="comision-items-list">
         ${cita.items.map((item, i) => {
           const assigned = cita.comisionesMap[i];
-          const pctKey = item.tipo === 'servicio' ? 'pct_servicio' : 'pct_producto';
           return `
             <div class="comision-item-card">
               <div class="comision-item-header">
@@ -423,19 +496,24 @@ function renderStep5(el) {
               <div class="comision-item-badge comision-item-badge--${item.tipo}">
                 ${item.tipo === 'servicio' ? 'Servicio' : 'Producto'}
               </div>
-              <select class="comision-select" data-index="${i}">
-                <option value="">Sin comisi\u00f3n</option>
-                ${trabajadoras.map((t) => `
-                  <option value="${t.nombre}" ${assigned && assigned.trabajadora === t.nombre ? 'selected' : ''}>
-                    ${t.nombre} (${t[pctKey]}%)
-                  </option>
-                `).join('')}
-              </select>
-              ${assigned ? `
-                <div class="comision-preview">
-                  Comisi\u00f3n: ${formatMXN(assigned.comision)}
+              <div class="comision-assign-row">
+                <select class="comision-select" data-index="${i}">
+                  <option value="">Sin comisi\u00f3n</option>
+                  ${trabajadoras.map((t) => {
+                    const nombre = nombreOf(t);
+                    return `<option value="${nombre}" ${assigned && assigned.trabajadora === nombre ? 'selected' : ''}>${nombre}</option>`;
+                  }).join('')}
+                </select>
+                <div class="comision-pct-wrap">
+                  <input type="number" class="comision-pct-input" data-index="${i}"
+                    placeholder="0" min="0" max="100" inputmode="numeric"
+                    value="${assigned ? assigned.pct : ''}">
+                  <span class="comision-pct-symbol">%</span>
                 </div>
-              ` : ''}
+              </div>
+              <div class="comision-preview ${assigned ? '' : 'hidden'}" data-preview="${i}">
+                ${assigned ? `Comisi\u00f3n: ${formatMXN(assigned.comision)}` : ''}
+              </div>
             </div>
           `;
         }).join('')}
@@ -448,39 +526,94 @@ function renderStep5(el) {
     </div>
   `;
 
-  // Escuchar cambios en selects
-  el.querySelectorAll('.comision-select').forEach((select) => {
-    select.addEventListener('change', () => {
-      const idx = parseInt(select.dataset.index, 10);
-      const workerName = select.value;
+  // Recalcula la comisi\u00f3n de un item a partir de la trabajadora + % escrito.
+  // Actualiza solo el preview de ese item (sin re-render) para no perder el foco.
+  const recalc = (idx) => {
+    const selectEl = el.querySelector(`.comision-select[data-index="${idx}"]`);
+    const pctEl = el.querySelector(`.comision-pct-input[data-index="${idx}"]`);
+    const previewEl = el.querySelector(`[data-preview="${idx}"]`);
+    const worker = selectEl.value;
+    const pct = parseFloat(pctEl.value);
 
-      if (!workerName) {
-        delete cita.comisionesMap[idx];
-      } else {
-        const worker = trabajadoras.find((t) => t.nombre === workerName);
-        const item = cita.items[idx];
-        const pct = item.tipo === 'servicio' ? worker.pct_servicio : worker.pct_producto;
-        const comision = Math.round(item.costo * pct / 100 * 100) / 100;
-        cita.comisionesMap[idx] = { trabajadora: workerName, pct, comision };
-      }
-      renderStep5(el);
-    });
+    if (worker && pct > 0) {
+      const item = cita.items[idx];
+      const comision = Math.round(item.costo * pct / 100 * 100) / 100;
+      cita.comisionesMap[idx] = { trabajadora: worker, pct, comision };
+      previewEl.textContent = `Comisi\u00f3n: ${formatMXN(comision)}`;
+      previewEl.classList.remove('hidden');
+    } else {
+      delete cita.comisionesMap[idx];
+      previewEl.textContent = '';
+      previewEl.classList.add('hidden');
+    }
+  };
+
+  el.querySelectorAll('.comision-select').forEach((select) => {
+    select.addEventListener('change', () => recalc(parseInt(select.dataset.index, 10)));
+  });
+  el.querySelectorAll('.comision-pct-input').forEach((input) => {
+    input.addEventListener('input', () => recalc(parseInt(input.dataset.index, 10)));
   });
 
   document.getElementById('btn-skip-comisiones').addEventListener('click', () => {
     cita.comisionesMap = {};
-    step = 6;
-    renderStep();
+    goNext();
   });
 
   document.getElementById('btn-step5').addEventListener('click', () => {
-    step = 6;
-    renderStep();
+    goNext();
   });
 }
 
-// Paso 6: Método de pago
-function renderStep6(el) {
+// Paso "notas": fórmula usada / notas de la visita (opcional)
+function renderStepNotas(el) {
+  // Si la clienta tiene nota fija (alergias, preferencias), este es el
+  // momento en que importa: se muestra antes de escribir la fórmula.
+  const notaFija = notasFijas[normalizeNombre(cita.clienta)] || '';
+
+  el.innerHTML = `
+    <div class="step-content">
+      ${notaFija ? `
+        <div class="nota-fija-banner">
+          <span class="nota-fija-banner-label">Nota de ${escapeHTML(cita.clienta)}</span>
+          <span class="nota-fija-banner-text">${escapeHTML(notaFija)}</span>
+        </div>
+      ` : ''}
+
+      <label class="input-label">Fórmula o notas (opcional)</label>
+      <p class="multi-select-hint">Lo que apuntes aquí lo verás en su historial la próxima visita</p>
+      <textarea class="input textarea" id="input-nota" rows="5" maxlength="500"
+        placeholder="Ej: Tinte 7.1 + 20 vol, 35 min">${escapeHTML(cita.nota)}</textarea>
+      <div class="char-counter" id="nota-counter">${cita.nota.length}/500</div>
+
+      <div class="step-actions mt-24">
+        <button class="btn btn-outline" id="btn-skip-notas">Sin notas</button>
+        <button class="btn btn-primary" id="btn-step-notas">Siguiente</button>
+      </div>
+    </div>
+  `;
+
+  const textarea = document.getElementById('input-nota');
+  const counter = document.getElementById('nota-counter');
+
+  textarea.addEventListener('input', () => {
+    cita.nota = textarea.value;
+    counter.textContent = `${textarea.value.length}/500`;
+  });
+
+  document.getElementById('btn-skip-notas').addEventListener('click', () => {
+    cita.nota = '';
+    goNext();
+  });
+
+  document.getElementById('btn-step-notas').addEventListener('click', () => {
+    cita.nota = textarea.value.trim();
+    goNext();
+  });
+}
+
+// Paso "pago": método de pago
+function renderStepPago(el) {
   const metodos = [
     { id: 'Efectivo', emoji: '\ud83d\udcb5', label: 'Efectivo' },
     { id: 'Tarjeta', emoji: '\ud83d\udcb3', label: 'Tarjeta' },
@@ -505,13 +638,12 @@ function renderStep6(el) {
     const card = e.target.closest('[data-metodo]');
     if (!card) return;
     cita.metodo_pago = card.dataset.metodo;
-    step = 7;
-    renderStep();
+    goNext();
   });
 }
 
-// Paso 7: Confirmación con desglose y comisiones
-function renderStep7(el) {
+// Paso "confirmar": resumen con desglose y comisiones
+function renderStepConfirmar(el) {
   const total = cita.items.reduce((sum, it) => sum + it.costo, 0);
   const serviciosItems = cita.items.filter((it) => it.tipo === 'servicio');
   const productosItems = cita.items.filter((it) => it.tipo === 'producto');
@@ -523,7 +655,12 @@ function renderStep7(el) {
       <div class="summary">
         <div class="summary-row">
           <span class="summary-label">Clienta</span>
-          <span class="summary-value">${cita.clienta}</span>
+          <span class="summary-value">${escapeHTML(cita.clienta)}</span>
+        </div>
+
+        <div class="summary-row">
+          <span class="summary-label">Fecha</span>
+          <span class="summary-value">${formatFechaDisplay(cita.fecha)}</span>
         </div>
 
         ${serviciosItems.length > 0 ? `
@@ -582,6 +719,11 @@ function renderStep7(el) {
           <span class="summary-label">Pago</span>
           <span class="summary-value">${cita.metodo_pago}</span>
         </div>
+
+        ${cita.nota ? `
+          <div class="summary-section-title">Fórmula / Notas</div>
+          <div class="summary-nota">${escapeHTML(cita.nota)}</div>
+        ` : ''}
       </div>
       <button class="btn btn-primary mt-24" id="btn-confirmar">Confirmar y Registrar</button>
     </div>
@@ -609,12 +751,13 @@ async function submitCita() {
     });
 
     await createCita(session.sheet_id, {
-      fecha: todayISO(),
+      fecha: cita.fecha || todayISO(),
       timestamp: nowTimestamp(),
       clienta: cita.clienta,
       items: cita.items,
       total,
       metodo_pago: cita.metodo_pago,
+      nota: cita.nota,
       comisiones,
     });
     hideLoader();
