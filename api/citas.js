@@ -14,7 +14,7 @@
  * con fallback; nunca usar row.length para detectar el formato.
  */
 
-const { readSheet, appendSheet, updateSheet, deleteRow } = require('../lib/sheets');
+const { readSheet, appendSheet, updateSheet, deleteRow, deleteRows } = require('../lib/sheets');
 
 module.exports = async function handler(req, res) {
   try {
@@ -132,6 +132,22 @@ module.exports = async function handler(req, res) {
       }
 
       await deleteRow(sheet_id, 'Citas', rowIndex);
+
+      // Borrar también las comisiones de esta cita: si no, quedan huérfanas
+      // en el reporte de Comisiones (o duplicadas si la cita se vuelve a
+      // registrar corregida) porque esa hoja es independiente de Citas.
+      try {
+        const comisionRows = await readSheet(sheet_id, 'Comisiones!A:I');
+        const comisionIndexes = comisionRows
+          .map((row, i) => (i > 0 && row[0] === fecha && row[1] === timestamp && row[2] === clienta ? i : -1))
+          .filter((i) => i !== -1);
+        if (comisionIndexes.length > 0) {
+          await deleteRows(sheet_id, 'Comisiones', comisionIndexes);
+        }
+      } catch {
+        // Salón sin hoja de Comisiones todavía: nada que limpiar.
+      }
+
       return res.status(200).json({ success: true });
     }
 
