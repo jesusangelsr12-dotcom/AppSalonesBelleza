@@ -5,17 +5,19 @@ PWA (Progressive Web App) para la administración de citas, productos y gastos d
 ## Funcionalidades
 
 - **Autenticación por PIN** — Cada salón tiene su propio PIN de 6 dígitos con sesión de 8 horas
-- **Registrar Citas** — Flujo de hasta 8 pasos (se ajustan solos al catálogo del salón):
+- **Registrar Citas** — Flujo de hasta 9 pasos (se ajustan solos al catálogo del salón):
   1. Nombre de la clienta y fecha de la cita (default: hoy, editable)
   2. Selección múltiple de servicios (opcional si solo llevó producto)
   3. Selección múltiple de productos (opcional; debe haber al menos un servicio o producto)
   4. Precio individual por cada servicio/producto
   5. Comisiones: elegir trabajadora y escribir el % de cada servicio/producto (opcional, se salta si no hay trabajadoras configuradas)
   6. Fórmula o notas de la visita (opcional)
-  7. Método de pago (Efectivo, Tarjeta, Transferencia)
-  8. Confirmación con desglose, comisiones y total automático
+  7. Anticipo: cuánto dejó la clienta antes, o "Sin anticipo" (no puede ser mayor al total)
+  8. Método de pago del resto (Efectivo, Tarjeta, Transferencia). Se salta si el anticipo cubre todo
+  9. Confirmación con desglose, comisiones, anticipo, resta por pagar y total automático
 - **Comisiones** — Al registrar la cita eliges la trabajadora y escribes el % por cada servicio/producto; la app calcula el monto. Se registran en hoja separada "Comisiones" para fácil reporteo
 - **Registrar Gastos** — Registro de gastos operativos del salón
+- **Anticipos** — Al registrar la cita se anota el anticipo que dejó la clienta; la confirmación y Ver Registros muestran el anticipo y lo que se cobró ese día
 - **Ver Registros del Día** — Resumen de ingresos vs gastos con desglose detallado
 - **Eliminar Registros** — Eliminar citas o gastos con confirmación
 - **Configuración** — Administrar catálogo de servicios, productos y trabajadoras
@@ -114,6 +116,13 @@ al registrar cada cita. (Se siguen leyendo salones con el formato viejo
 | E | total |
 | F | metodo_pago |
 | G | nota (fórmula usada / notas de la visita) |
+| H | anticipo (vacío si no dejó anticipo) |
+
+`total` (E) es siempre el valor completo de la cita. Lo cobrado el día de la
+cita es `total − anticipo`. Como el anticipo no se registra en otro lado, el
+total completo cuenta como ingreso del día en que se registra la cita.
+En salones creados antes de esta columna basta con escribir `anticipo` en
+`Citas!H1` (es solo el encabezado; la app funciona igual sin él).
 
 **Formato de items:**
 ```json

@@ -1464,6 +1464,31 @@ small { font-size: 0.8rem; color: var(--color-gray-500); }
   color: var(--color-purple);
 }
 
+/* --- Anticipo (confirmación de cita y registros) --- */
+.summary-value--anticipo {
+  color: var(--color-accent);
+}
+
+.summary-row--resta .summary-label,
+.summary-row--resta .summary-value {
+  font-weight: 700;
+  color: var(--color-brown);
+}
+
+.record-anticipo-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-bg);
+  color: var(--color-brown-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 /* --- Home Daily Summary --- */
 .home-summary {
   display: flex;

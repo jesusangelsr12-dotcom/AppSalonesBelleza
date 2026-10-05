@@ -191,6 +191,18 @@ function buildItemsBreakdown(items) {
   `;
 }
 
+/** Fila con el anticipo y lo que se cobró ese día (solo si hubo anticipo). */
+function buildAnticipoRow(c) {
+  if (!(c.anticipo > 0)) return '';
+  const cobrado = Math.max(c.total - c.anticipo, 0);
+  return `
+    <div class="record-anticipo-row">
+      <span>Anticipo ${formatMXN(c.anticipo)}</span>
+      <span>Cobrado ese d\u00eda ${formatMXN(cobrado)}</span>
+    </div>
+  `;
+}
+
 /** Fila de fórmula / nota dentro de la tarjeta de una cita, editable. */
 function buildNotaRow(c, index) {
   return `
@@ -277,6 +289,7 @@ function renderRegistros(citas, gastos) {
               <button class="record-delete-btn" data-type="cita" data-index="${i}" title="Eliminar">\u00d7</button>
             </div>
             ${buildItemsBreakdown(c.items)}
+            ${buildAnticipoRow(c)}
             ${buildNotaRow(c, i)}
           </div>
         `).join('')}

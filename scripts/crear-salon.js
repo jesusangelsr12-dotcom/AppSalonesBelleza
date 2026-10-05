@@ -184,8 +184,8 @@ async function main() {
           ],
         },
         {
-          range: 'Citas!A1:G1',
-          values: [['fecha', 'timestamp', 'clienta', 'items', 'total', 'metodo_pago', 'nota']],
+          range: 'Citas!A1:H1',
+          values: [['fecha', 'timestamp', 'clienta', 'items', 'total', 'metodo_pago', 'nota', 'anticipo']],
         },
         {
           range: 'Comisiones!A1:I1',

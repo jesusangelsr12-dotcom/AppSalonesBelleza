@@ -11,8 +11,9 @@
  * - precios     Costo de cada item, uno por uno (con sub-navegación interna)
  * - comisiones  Trabajadora + % por item (solo si hay trabajadoras)
  * - notas       Fórmula usada / notas de la visita (opcional)
- * - pago        Método de pago
- * - confirmar   Resumen con desglose, comisiones y total
+ * - anticipo    Cuánto dejó de anticipo, o "Sin anticipo"
+ * - pago        Método de pago del resto (se salta si el anticipo cubre todo)
+ * - confirmar   Resumen con desglose, comisiones, anticipo y total
  *
  * Debe haber al menos un servicio o un producto seleccionado en total.
  */
@@ -35,6 +36,7 @@ let cita = {
   items: [],              // [{tipo, nombre, costo}]
   comisionesMap: {},       // { itemIndex: { trabajadora, pct, comision } }
   nota: '',                // fórmula usada / notas de la visita
+  anticipo: 0,             // lo que la clienta dejó antes; 0 = sin anticipo
   metodo_pago: '',
 };
 
@@ -42,6 +44,13 @@ let cita = {
 let pricingItems = [];
 let pricingIndex = 0;
 let currentCosto = '';
+
+// Para el paso de anticipo (mismo teclado que precios)
+let currentAnticipo = '';
+
+// Si el anticipo cubre la cuenta completa no hay resto que cobrar, así que
+// el paso de pago se salta y la cita queda con este método.
+const METODO_SOLO_ANTICIPO = 'Anticipo';
 
 /** Muestra una fecha YYYY-MM-DD como "12 de julio de 2026" */
 function formatFechaDisplay(fechaISO) {
@@ -51,7 +60,17 @@ function formatFechaDisplay(fechaISO) {
 }
 
 // Secuencia completa de pasos, en orden.
-const STEPS = ['clienta', 'servicios', 'productos', 'precios', 'comisiones', 'notas', 'pago', 'confirmar'];
+const STEPS = ['clienta', 'servicios', 'productos', 'precios', 'comisiones', 'notas', 'anticipo', 'pago', 'confirmar'];
+
+/** Suma de los items cotizados: el valor completo de la cita. */
+function totalCita() {
+  return cita.items.reduce((sum, it) => sum + it.costo, 0);
+}
+
+/** Lo que falta por cobrar hoy después del anticipo. */
+function restaPorCobrar() {
+  return Math.max(totalCita() - cita.anticipo, 0);
+}
 
 /** Pasos que aplican a este salón, en orden. */
 function activeSteps() {
@@ -59,6 +78,8 @@ function activeSteps() {
     if (k === 'servicios') return (session?.servicios || []).length > 0;
     if (k === 'productos') return (session?.productos || []).length > 0;
     if (k === 'comisiones') return (session?.trabajadoras || []).length > 0;
+    // Con el anticipo cubriendo todo no queda nada que cobrar
+    if (k === 'pago') return cita.items.length === 0 || restaPorCobrar() > 0;
     return true;
   });
 }
@@ -109,11 +130,13 @@ export function init(s) {
     items: [],
     comisionesMap: {},
     nota: '',
+    anticipo: 0,
     metodo_pago: '',
   };
   pricingItems = [];
   pricingIndex = 0;
   currentCosto = '';
+  currentAnticipo = '';
   allClientas = [];
   notasFijas = {};
 
@@ -180,7 +203,14 @@ function goBack() {
 }
 
 function updateStepIndicator() {
-  const activeIndex = activeSteps().indexOf(stepKey);
+  const steps = activeSteps();
+  const activeIndex = steps.indexOf(stepKey);
+  const indicator = document.getElementById('step-indicator');
+  // El número de pasos puede cambiar a media cita (ej. el anticipo cubre
+  // todo y el paso de pago desaparece): se rehacen los puntitos si no cuadran.
+  if (indicator && indicator.children.length !== steps.length) {
+    indicator.innerHTML = steps.map(() => '<div class="step-dot"></div>').join('');
+  }
   const dots = document.querySelectorAll('#step-indicator .step-dot');
   dots.forEach((dot, i) => {
     dot.classList.toggle('active', i <= activeIndex);
@@ -198,6 +228,7 @@ function renderStep() {
     case 'precios': renderStepPrecios(container); break;
     case 'comisiones': renderStepComisiones(container); break;
     case 'notas': renderStepNotas(container); break;
+    case 'anticipo': renderStepAnticipo(container); break;
     case 'pago': renderStepPago(container); break;
     case 'confirmar': renderStepConfirmar(container); break;
   }
@@ -612,6 +643,83 @@ function renderStepNotas(el) {
   });
 }
 
+// Paso "anticipo": cuánto dejó la clienta antes, o "Sin anticipo"
+function renderStepAnticipo(el) {
+  const total = totalCita();
+  currentAnticipo = cita.anticipo > 0 ? String(cita.anticipo) : '';
+
+  el.innerHTML = `
+    <div class="step-content">
+      <label class="input-label">¿Dejó anticipo?</label>
+      <p class="multi-select-hint">Total de la cita: ${formatMXN(total)}</p>
+      <div class="amount-display">
+        <span class="amount-display-currency">$</span>
+        <span class="amount-display-value" id="anticipo-display">${currentAnticipo || '0'}</span>
+      </div>
+      <div class="keypad" id="anticipo-keypad">
+        <button class="keypad-key" data-key="1">1</button>
+        <button class="keypad-key" data-key="2">2</button>
+        <button class="keypad-key" data-key="3">3</button>
+        <button class="keypad-key" data-key="4">4</button>
+        <button class="keypad-key" data-key="5">5</button>
+        <button class="keypad-key" data-key="6">6</button>
+        <button class="keypad-key" data-key="7">7</button>
+        <button class="keypad-key" data-key="8">8</button>
+        <button class="keypad-key" data-key="9">9</button>
+        <button class="keypad-key keypad-key--delete" data-key="delete">\u232b</button>
+        <button class="keypad-key" data-key="0">0</button>
+        <button class="keypad-key keypad-key--confirm" data-key="ok">\u2713</button>
+      </div>
+      <button class="btn btn-outline mt-24" id="btn-sin-anticipo">Sin anticipo</button>
+    </div>
+  `;
+
+  // Al cambiar el anticipo puede aparecer o desaparecer el paso de pago
+  // (updateStepIndicator rehace los puntitos al dibujar el siguiente paso).
+  const aplicarAnticipo = (monto) => {
+    cita.anticipo = monto;
+    if (restaPorCobrar() === 0) {
+      cita.metodo_pago = METODO_SOLO_ANTICIPO;
+    } else if (cita.metodo_pago === METODO_SOLO_ANTICIPO) {
+      // Venía de "anticipo cubre todo" y ahora sí hay resto: que elija método
+      cita.metodo_pago = '';
+    }
+    goNext();
+  };
+
+  document.getElementById('anticipo-keypad').addEventListener('click', (e) => {
+    const key = e.target.closest('[data-key]');
+    if (!key) return;
+    const k = key.dataset.key;
+
+    if (k === 'delete') {
+      currentAnticipo = currentAnticipo.slice(0, -1);
+    } else if (k === 'ok') {
+      const monto = parseFloat(currentAnticipo) || 0;
+      if (monto === 0) {
+        showToast('Ingresa el anticipo o toca "Sin anticipo"', 'error');
+        return;
+      }
+      if (monto > total) {
+        showToast(`El anticipo no puede ser mayor al total (${formatMXN(total)})`, 'error');
+        return;
+      }
+      aplicarAnticipo(monto);
+      return;
+    } else {
+      if (currentAnticipo === '0') currentAnticipo = '';
+      if (currentAnticipo.length < 7) currentAnticipo += k;
+    }
+
+    document.getElementById('anticipo-display').textContent = currentAnticipo || '0';
+  });
+
+  document.getElementById('btn-sin-anticipo').addEventListener('click', () => {
+    currentAnticipo = '';
+    aplicarAnticipo(0);
+  });
+}
+
 // Paso "pago": método de pago
 function renderStepPago(el) {
   const metodos = [
@@ -620,9 +728,13 @@ function renderStepPago(el) {
     { id: 'Transferencia', emoji: '\ud83d\udcf1', label: 'Transferencia' },
   ];
 
+  // Con anticipo, el método es del resto que se cobra hoy
+  const resta = restaPorCobrar();
+
   el.innerHTML = `
     <div class="step-content">
-      <label class="input-label">M\u00e9todo de pago</label>
+      <label class="input-label">${cita.anticipo > 0 ? '¿Cómo pagó el resto?' : 'M\u00e9todo de pago'}</label>
+      ${cita.anticipo > 0 ? `<p class="multi-select-hint">Resta por pagar: ${formatMXN(resta)}</p>` : ''}
       <div class="payment-grid">
         ${metodos.map((m) => `
           <button class="payment-card ${cita.metodo_pago === m.id ? 'selected' : ''}" data-metodo="${m.id}">
@@ -644,7 +756,8 @@ function renderStepPago(el) {
 
 // Paso "confirmar": resumen con desglose y comisiones
 function renderStepConfirmar(el) {
-  const total = cita.items.reduce((sum, it) => sum + it.costo, 0);
+  const total = totalCita();
+  const resta = restaPorCobrar();
   const serviciosItems = cita.items.filter((it) => it.tipo === 'servicio');
   const productosItems = cita.items.filter((it) => it.tipo === 'producto');
   const comisionesList = Object.entries(cita.comisionesMap);
@@ -702,6 +815,17 @@ function renderStepConfirmar(el) {
           <span class="summary-value summary-value--total">${formatMXN(total)}</span>
         </div>
 
+        ${cita.anticipo > 0 ? `
+          <div class="summary-row">
+            <span class="summary-label">Anticipo</span>
+            <span class="summary-value summary-value--anticipo">\u2212${formatMXN(cita.anticipo)}</span>
+          </div>
+          <div class="summary-row summary-row--resta">
+            <span class="summary-label">Resta por pagar</span>
+            <span class="summary-value">${formatMXN(resta)}</span>
+          </div>
+        ` : ''}
+
         ${comisionesList.length > 0 ? `
           <div class="summary-section-title">Comisiones</div>
           ${comisionesList.map(([idx, com]) => {
@@ -717,7 +841,7 @@ function renderStepConfirmar(el) {
 
         <div class="summary-row">
           <span class="summary-label">Pago</span>
-          <span class="summary-value">${cita.metodo_pago}</span>
+          <span class="summary-value">${resta === 0 && cita.anticipo > 0 ? 'Cubierto con anticipo' : cita.metodo_pago}</span>
         </div>
 
         ${cita.nota ? `
@@ -734,8 +858,16 @@ function renderStepConfirmar(el) {
 
 async function submitCita() {
   try {
+    const total = totalCita();
+    // Si se regresó a cambiar precios, el anticipo ya validado podría
+    // quedar mayor al nuevo total; el paso de anticipo lo vuelve a revisar,
+    // pero esto evita registrar una cita incongruente pase lo que pase.
+    if (cita.anticipo > total) {
+      showToast('El anticipo es mayor al total; corrígelo', 'error');
+      goTo('anticipo');
+      return;
+    }
     showLoader();
-    const total = cita.items.reduce((sum, it) => sum + it.costo, 0);
 
     // Armar array de comisiones para la hoja separada
     const comisiones = Object.entries(cita.comisionesMap).map(([idx, com]) => {
@@ -758,6 +890,7 @@ async function submitCita() {
       total,
       metodo_pago: cita.metodo_pago,
       nota: cita.nota,
+      anticipo: cita.anticipo,
       comisiones,
     });
     hideLoader();

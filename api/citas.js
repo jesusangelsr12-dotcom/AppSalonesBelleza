@@ -2,12 +2,17 @@
  * GET/POST/PATCH/DELETE /api/citas
  * Lee citas de un día, registra, edita la nota o elimina una cita.
  * GET    ?sheet_id=xxx&fecha=2026-02-24 → { citas: [...] }
- * POST   { sheet_id, fecha, timestamp, clienta, items, total, metodo_pago, nota?, comisiones? } → { success }
+ * POST   { sheet_id, fecha, timestamp, clienta, items, total, metodo_pago, nota?, anticipo?, comisiones? } → { success }
  * PATCH  { sheet_id, fecha, timestamp, clienta, nota } → { success }
  * DELETE { sheet_id, fecha, timestamp, clienta } → { success }
  *
- * Citas cols: A=fecha, B=timestamp, C=clienta, D=items(JSON), E=total, F=metodo_pago, G=nota
+ * Citas cols: A=fecha, B=timestamp, C=clienta, D=items(JSON), E=total, F=metodo_pago, G=nota, H=anticipo
  * items es un JSON array: [{"tipo":"servicio","nombre":"Corte","costo":200}, ...]
+ *
+ * `total` es el valor completo de la cita (suma de items). `anticipo` es la
+ * parte que la clienta dejó antes; lo cobrado ese día es total − anticipo.
+ * El anticipo no se registra en ningún otro lado, por eso el total completo
+ * sí cuenta como ingreso del día en que se registra la cita.
  *
  * Nota: Sheets recorta las celdas vacías del final, así que las filas viejas
  * (escritas cuando solo existían 6 columnas) llegan sin row[6]. Se lee siempre
@@ -24,8 +29,8 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'Faltan parámetros' });
       }
 
-      const rows = await readSheet(sheet_id, 'Citas!A:G');
-      // Row 0 = headers: fecha, timestamp, clienta, items/servicio, total/costo, metodo_pago, nota
+      const rows = await readSheet(sheet_id, 'Citas!A:H');
+      // Row 0 = headers: fecha, timestamp, clienta, items/servicio, total/costo, metodo_pago, nota, anticipo
       const citas = rows.slice(1)
         .filter((row) => row[0] === fecha)
         .map((row) => {
@@ -49,6 +54,7 @@ module.exports = async function handler(req, res) {
             total,
             metodo_pago: row[5],
             nota: row[6] || '',
+            anticipo: parseFloat(row[7]) || 0,
           };
         });
 
@@ -56,16 +62,23 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { sheet_id, fecha, timestamp, clienta, items, total, metodo_pago, nota, comisiones } = req.body;
+      const { sheet_id, fecha, timestamp, clienta, items, total, metodo_pago, nota, anticipo, comisiones } = req.body;
 
-      // `nota` es opcional a propósito: los clientes viejos que quedaron
-      // cacheados no la mandan y deben seguir funcionando.
+      // `nota` y `anticipo` son opcionales a propósito: los clientes viejos
+      // que quedaron cacheados no los mandan y deben seguir funcionando.
       if (!sheet_id || !fecha || !clienta || !items || total === undefined || !metodo_pago) {
         return res.status(400).json({ error: 'Faltan datos requeridos' });
       }
 
-      await appendSheet(sheet_id, 'Citas!A:G', [
-        [fecha, timestamp, clienta, JSON.stringify(items), String(total), metodo_pago, nota || ''],
+      const anticipoNum = anticipo === undefined || anticipo === null ? 0 : Number(anticipo);
+      if (!Number.isFinite(anticipoNum) || anticipoNum < 0 || anticipoNum > Number(total)) {
+        return res.status(400).json({ error: 'Anticipo inválido' });
+      }
+
+      // Sin anticipo la celda queda vacía, igual que una nota vacía
+      await appendSheet(sheet_id, 'Citas!A:H', [
+        [fecha, timestamp, clienta, JSON.stringify(items), String(total), metodo_pago, nota || '',
+          anticipoNum > 0 ? String(anticipoNum) : ''],
       ]);
 
       // Escribir comisiones en hoja separada si existen
